@@ -1,0 +1,3107 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nirmana Paku 3D (Artistik)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            overflow: hidden;
+            background-color: #f0f0f0;
+        }
+        
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+        
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            width: 280px;
+            z-index: 100;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .control-group {
+            margin-bottom: 15px;
+        }
+        
+        .control-group h3 {
+            margin-bottom: 8px;
+            font-size: 16px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 5px;
+        }
+        
+        .control-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .control-label {
+            flex: 1;
+            font-size: 14px;
+        }
+        
+        .control-input {
+            flex: 1;
+        }
+        
+        input[type="color"], input[type="number"], input[type="range"], select {
+            width: 100%;
+            padding: 3px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            width: 100%;
+            margin-top: 5px;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        .pattern-preview {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .pattern-item {
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            cursor: pointer;
+            text-align: center;
+            font-size: 12px;
+            transition: all 0.2s;
+        }
+        
+        .pattern-item:hover {
+            border-color: #4CAF50;
+        }
+        
+        .pattern-item.active {
+            border-color: #4CAF50;
+            background-color: #e8f5e9;
+        }
+        
+        .color-preview {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .color-item {
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            height: 30px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .color-item:hover {
+            border-color: #4CAF50;
+        }
+        
+        .color-item.active {
+            border-color: #4CAF50;
+        }
+        
+        #info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 14px;
+            z-index: 100;
+        }
+        
+        #status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            z-index: 100;
+            transition: opacity 0.5s;
+            opacity: 0; /* Hidden by default */
+        }
+        
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top-color: #4CAF50;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    
+    <div id="loading-screen">
+        <div>
+            <div class="spinner"></div>
+            <p style="text-align: center; margin-top: 10px;">Memuat...</p>
+        </div>
+    </div>
+    
+    <div id="controls">
+        <div class="control-group">
+            <h3>Performa</h3>
+            <div class="control-row">
+                <div class="control-label">Jumlah Paku</div>
+                <div class="control-input">
+                    <select id="nailCountSelect">
+                        <option value="21">Rendah (21×21 = 441)</option>
+                        <option value="31">Sedang (31×31 = 961)</option>
+                        <option value="41" selected>Tinggi (41×41 = 1681)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Total Paku:</div>
+                <div class="control-input" id="actualNailCount">961</div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Jarak Antar Paku</h3>
+            <div class="control-row">
+                <div class="control-label">Jarak (cm)</div>
+                <div class="control-input">
+                    <input type="range" id="nailSpacing" value="1.0" min="0.2" max="3.0" step="0.1">
+                    <span id="spacingValue">1.0</span>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Distribusi</div>
+                <div class="control-input">
+                    <select id="spacingDistribution">
+                        <option value="uniform" selected>Seragam</option>
+                        <option value="center">Padat di Tengah</option>
+                        <option value="edges">Padat di Tepi</option>
+                        <option value="random">Acak (Teratur)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Margin Papan</h3>
+            <div class="control-row">
+                <div class="control-label">Margin Atas (cm)</div>
+                <div class="control-input">
+                    <input type="range" id="topMargin" value="0" min="0" max="5" step="0.5">
+                    <span id="topMarginValue">0</span>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Margin Tepi (cm)</div>
+                <div class="control-input">
+                    <input type="range" id="edgeMargin" value="0.5" min="0" max="5" step="0.5">
+                    <span id="edgeMarginValue">0.5</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Pola Nirmana</h3>
+            <div class="control-row">
+                <div class="control-label">Pilih Pola</div>
+                <div class="control-input">
+                    <select id="patternSelect">
+                        <option value="diamond">Diamond</option>
+                        <option value="diamonds">Diamonds</option>
+                        <option value="waves">Gelombang</option>
+                        <option value="concentric">Lingkaran Konsentris</option>
+                        <option value="checkerboard">Papan Catur</option>
+                        <option value="pyramid">Piramida</option>
+                        <option value="ripple">Riak Air</option>
+                        <option value="custom">Kustom (Seperti Gambar)</option>
+                        <option value="crosshatch">Garis Silang</option>
+                        <option value="spiral">Spiral</option>
+                        <option value="horizontalGradient">Gradien Horizontal</option>
+                        <option value="verticalGradient">Gradien Vertikal</option>
+                        <option value="radialGradient">Gradien Radial</option>
+                        <option value="noise">Noise</option>
+                        <option value="stars">Bintang</option>
+                        <option value="hexagons">Hexagon</option>
+                        <option value="polkadot">Polkadot</option>
+                        <option value="verticalStripes">Garis Vertikal</option>
+                        <option value="horizontalStripes">Garis Horizontal</option>
+                        <option value="zigzag">Zigzag</option>
+                        <option value="brick">Batu Bata</option>
+                        <option value="grid">Grid</option>
+                        <option value="dotGrid">DotGrid</option>
+                        <option value="moire">Moiré</option>
+                        <option value="mandala">Mandala</option>
+                        <option value="mazelike">Mazelike</option>
+                        <option value="triangles">Segitiga</option>
+                        <option value="terraces">Terasering</option>
+                        <option value="vortex">Vortex</option>
+                        <option value="woodgrain">Serat Kayu</option>
+                        <option value="fingerprint">Sidik Jari</option>
+                        <option value="cellular">Sel</option>
+                        <option value="bubbles">Gelembung</option>
+                        <option value="labyrinth">Labirin</option>
+                        <option value="circuitBoard">Papan Sirkuit</option>
+                        <option value="psychedelic">Psychedelic</option>
+                        <option value="weave">Anyaman</option>
+                        <option value="scales">Sisik</option>
+                        <option value="fractal">Fraktal</option>
+                        <option value="camouflage">Camouflage</option>
+                        <option value="islamic">Islamic</option>
+                        <option value="marble">Marmer</option>
+                        <option value="cityBlocks">Peta Kota</option>
+                        <option value="raindrops">Tetesan Hujan</option>
+                        <option value="crossroads">Persimpangan Jalan</option>
+                        <option value="tiling">Ubin</option>
+                        <option value="dunes">Bukit Pasir</option>
+                        <option value="crystals">Kristal</option>
+                        <option value="floral">Bunga</option>
+                        <option value="circuitry">Sirkuit</option>
+                        <option value="bark">Kulit Kayu</option>
+                        <option value="runes">Simbol Rune</option>
+                        <option value="circuits">Sirkuit Kompleks</option>
+                        <option value="mosaic">Mosaik</option>
+                        <option value="aurora">Aurora</option>
+                        <option value="interference">Interferensi Gelombang</option>
+                        <option value="maze">Labirin</option>
+                        <option value="qrcode">QR Code</option>
+                        <option value="voronoi">Voronoi</option>
+                        <option value="reptile">Sisik Reptil</option>
+                        <option value="snowflakes">Kepingan Salju</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="pattern-preview" id="patternPreview">
+                <!-- Pattern previews will be added here -->
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Intensitas Pola</div>
+                <div class="control-input">
+                    <input type="range" id="patternIntensity" value="1.0" min="0.1" max="1.0" step="0.1">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Skala Pola</div>
+                <div class="control-input">
+                    <input type="range" id="patternScale" value="4" min="1" max="10" step="1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Warna Artistik</h3>
+            <div class="control-row">
+                <div class="control-label">Skema Warna</div>
+                <div class="control-input">
+                    <select id="colorSchemeSelect">
+                        <option value="rainbow">Pelangi</option>
+                        <option value="complementary">Komplementer</option>
+                        <option value="monochromatic">Monokromatik</option>
+                        <option value="analogous">Analogus</option>
+                        <option value="triadic">Triadic</option>
+                        <option value="custom">Kustom</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="color-preview" id="colorPreview">
+                <!-- Color previews will be added here -->
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Warna Dasar</div>
+                <div class="control-input">
+                    <input type="color" id="baseColor" value="#ff4500">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Variasi Warna</div>
+                <div class="control-input">
+                    <input type="range" id="colorVariation" value="0.7" min="0" max="1" step="0.1">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Kecerahan</div>
+                <div class="control-input">
+                    <input type="range" id="brightness" value="0.8" min="0.2" max="1.2" step="0.1">
+                </div>
+            </div>
+            
+            <div class="control-row">
+                <div class="control-label">Metalik</div>
+                <div class="control-input">
+                    <input type="range" id="metalness" value="0.8" min="0" max="1" step="0.1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Pengaturan Papan</h3>
+            <div class="control-row">
+                <div class="control-label">Warna Papan</div>
+                <div class="control-input">
+                    <input type="color" id="boardColor" value="#a4846a">
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Ukuran Papan:</div>
+                <div class="control-input" id="boardSizeDisplay">42 cm</div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Pengaturan Paku</h3>
+            <div class="control-row">
+                <div class="control-label">Tinggi Min (cm)</div>
+                <div class="control-input">
+                    <input type="range" id="minHeight" value="1" min="0.5" max="3" step="0.1">
+                    <span id="minHeightValue">1.0</span>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Tinggi Max (cm)</div>
+                <div class="control-input">
+                    <input type="range" id="maxHeight" value="5" min="1" max="10" step="0.1">
+                    <span id="maxHeightValue">5.0</span>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Ukuran Kepala</div>
+                <div class="control-input">
+                    <input type="range" id="headSizeRatio" value="2.0" min="1.2" max="3.0" step="0.1">
+                    <span id="headSizeValue">2.0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Pencahayaan</h3>
+            <div class="control-row">
+                <div class="control-label">Intensitas</div>
+                <div class="control-input">
+                    <input type="range" id="lightIntensity" value="1.0" min="0.5" max="2.0" step="0.1">
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Kontras</div>
+                <div class="control-input">
+                    <input type="range" id="lightContrast" value="0.6" min="0.2" max="1.0" step="0.1">
+                </div>
+            </div>
+        </div>
+        
+        <div class="control-group">
+            <h3>Tampilan</h3>
+            <div class="control-row">
+                <div class="control-label">Rotasi Otomatis</div>
+                <div class="control-input">
+                    <input type="checkbox" id="autoRotate" checked>
+                </div>
+            </div>
+            <div class="control-row">
+                <div class="control-label">Detail Paku</div>
+                <div class="control-input">
+                    <select id="nailDetailSelect">
+                        <option value="low">Rendah (Box)</option>
+                        <option value="medium">Sedang (Silinder)</option>
+                        <option value="high" selected>Tinggi (Paku Realistis)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <button id="regenerate">Terapkan Perubahan</button>
+        <button id="screenshot">Ambil Screenshot</button>
+    </div>
+    
+    <div id="status">Memuat...</div>
+    <div id="info">FPS: <span id="fpsCounter">0</span> | Memori: <span id="memoryUsage">0</span> MB</div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Variabel utama
+        let scene, camera, renderer, controls;
+        let board;
+        let nailInstancedMesh, nailHeadInstancedMesh;
+        let lights = [];
+        let lastTime = 0;
+        let frameCount = 0;
+        let fps = 0;
+        let isGenerating = false;
+        let generationTimeout = null;
+        
+        // Pengaturan default
+        const settings = {
+            boardColor: 0xa4846a,
+            boardSize: 42, // cm (akan diatur otomatis berdasarkan jarak paku)
+            boardHeight: 2, // cm
+            baseColor: 0xffffff, // Warna dasar untuk skema warna
+            colorScheme: 'custom', // rainbow, complementary, monochromatic, analogous, triadic, custom
+            colorVariation: 0.7, // Seberapa bervariasi warna (0-1)
+            brightness: 0.8, // Kecerahan warna (0.2-1.2)
+            metalness: 0.8, // Tingkat metalik material (0-1)
+            headSizeRatio: 2.0, // Rasio ukuran kepala paku dibanding batang
+            nailGrid: 41, // Default ke 31x31 = 961 paku (seimbang)
+            minNailHeight: 1, // cm
+            maxNailHeight: 5, // cm
+            nailRadius: 0.1, // cm
+            edgeMargin: 0.5, // cm (margin dari tepi papan)
+            topMargin: 0, // cm (margin khusus untuk bagian atas papan)
+            autoRotate: false,
+            pattern: 'fingerprint',
+            patternIntensity: 1.0,
+            patternScale: 4,
+            nailDetail: 'medium', // low, medium, high
+            lightIntensity: 2.0, // Intensitas cahaya
+            lightContrast: 2.0, // Kontras cahaya (rasio ambient vs directional)
+            nailSpacing: 1.0, // Jarak antar paku (cm)
+            spacingDistribution: 'uniform' // Distribusi jarak: uniform, center, edges, random
+        };
+        
+        // Pola-pola nirmana
+        const patterns = {
+            // Pola diamond tunggal di tengah
+            diamond: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = (x - centerX) / centerX;
+                const dy = (y - centerY) / centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy) * 2;
+                return Math.max(0, (1 - dist) * intensity);
+            },
+            
+            // Pola multiple diamonds
+            diamonds: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const nx = ((x % s) / s) - 0.5;
+                const ny = ((y % s) / s) - 0.5;
+                const dist = Math.sqrt(nx * nx + ny * ny) * 2;
+                return Math.max(0, (1 - dist) * intensity);
+            },
+            
+            // Pola gelombang
+            waves: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const val = (Math.sin(x / s) + Math.sin(y / s)) * 0.5;
+                return (val * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola lingkaran konsentris
+            concentric: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const s = scale * 2;
+                return (Math.cos(dist / s * Math.PI) * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola papan catur
+            checkerboard: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const isEvenX = Math.floor(x / s) % 2 === 0;
+                const isEvenY = Math.floor(y / s) % 2 === 0;
+                return ((isEvenX && isEvenY) || (!isEvenX && !isEvenY)) ? intensity : 0.2;
+            },
+            
+            // Pola piramida
+            pyramid: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = Math.abs(x - centerX) / centerX;
+                const dy = Math.abs(y - centerY) / centerY;
+                const dist = Math.max(dx, dy) * 2;
+                return Math.max(0, (1 - dist) * intensity);
+            },
+            
+            // Pola riak air
+            ripple: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const s = scale;
+                return (Math.cos(dist / s) * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola kustom yang mirip dengan gambar referensi
+            custom: (x, y, gridSize, scale, intensity) => {
+                const s = scale * 2;
+                const gridX = Math.floor(x / s);
+                const gridY = Math.floor(y / s);
+                const cellX = (x % s) / s;
+                const cellY = (y % s) / s;
+                const dx = cellX - 0.5;
+                const dy = cellY - 0.5;
+                const dist = Math.sqrt(dx * dx + dy * dy) * 2;
+                const variation = ((gridX + gridY) % 2 === 0) ? 1.0 : 0.7;
+                return Math.max(0, (1 - dist) * variation * intensity);
+            },
+            
+            // -- POLA-POLA BARU --
+            
+            // Pola garis silang
+            crosshatch: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const lineWidth = s / 5;
+                const xMod = x % s;
+                const yMod = y % s;
+                if (xMod < lineWidth || yMod < lineWidth) {
+                    return intensity;
+                }
+                return 0.2;
+            },
+            
+            // Pola spiral
+            spiral: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                const s = scale / 10;
+                return (Math.cos(dist / s - angle * 2) * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola gradien horizontal
+            horizontalGradient: (x, y, gridSize, scale, intensity) => {
+                return (x / gridSize) * intensity;
+            },
+            
+            // Pola gradien vertikal
+            verticalGradient: (x, y, gridSize, scale, intensity) => {
+                return (y / gridSize) * intensity;
+            },
+            
+            // Pola gradien radial
+            radialGradient: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const maxDist = Math.sqrt(centerX * centerX + centerY * centerY);
+                return (1 - dist / maxDist) * intensity;
+            },
+            
+            // Pola noise Perlin simpel (simulasi)
+            noise: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 10;
+                const nx = Math.sin(x * s) * 12345.6789;
+                const ny = Math.cos(y * s) * 6789.1234;
+                const val = Math.sin(nx + ny) * 0.5 + 0.5;
+                return val * intensity;
+            },
+            
+            // Pola stars (bintang-bintang)
+            stars: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const seedX = Math.sin(x * 0.1) * 1000;
+                const seedY = Math.cos(y * 0.1) * 1000;
+                const seed = (seedX + seedY) % 1;
+                
+                const starX = Math.floor(x / s) * s + s / 2;
+                const starY = Math.floor(y / s) * s + s / 2;
+                const dx = x - starX;
+                const dy = y - starY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                // Random star radius based on position
+                const seedValue = Math.abs(Math.sin(starX * 0.5 + starY * 0.3) * 2347.2347) % 1;
+                const radius = s * 0.2 * seedValue;
+                
+                return dist < radius ? intensity : 0.1;
+            },
+            
+            // Pola hexagons
+            hexagons: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const hexHeight = s * Math.sqrt(3);
+                
+                // Konversi ke koordinat hex
+                const qx = x / s;
+                const rx = Math.floor(qx);
+                const fx = qx - rx;
+                
+                const ry_offset = (rx % 2) * 0.5;
+                const qy = y / hexHeight - ry_offset;
+                const ry = Math.floor(qy);
+                const fy = qy - ry;
+                
+                // Cek jarak dari pusat hex
+                const dx = fx - 0.5;
+                const dy = fy - 0.5;
+                const dist = Math.sqrt(dx * dx + dy * dy) * 1.5;
+                
+                // Variasi berdasarkan posisi 
+                const variation = ((rx + ry) % 3) / 3 + 0.5;
+                
+                return Math.max(0, (1 - dist) * variation * intensity);
+            },
+            
+            // Pola polkadot
+            polkadot: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const dotRadius = s * 0.25;
+                
+                // Pusat dot
+                const dotX = Math.floor(x / s) * s + s / 2;
+                const dotY = Math.floor(y / s) * s + s / 2;
+                
+                // Jarak dari pusat dot
+                const dx = x - dotX;
+                const dy = y - dotY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                return dist < dotRadius ? intensity : 0.1;
+            },
+            
+            // Pola stripes vertikal
+            verticalStripes: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const isEvenStripe = Math.floor(x / s) % 2 === 0;
+                return isEvenStripe ? intensity : 0.1;
+            },
+            
+            // Pola stripes horizontal
+            horizontalStripes: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const isEvenStripe = Math.floor(y / s) % 2 === 0;
+                return isEvenStripe ? intensity : 0.1;
+            },
+            
+            // Pola zigzag
+            zigzag: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const zigHeight = s / 2;
+                const yPos = y % s;
+                const xSection = Math.floor(x / (s/2)) % 2;
+                
+                let threshold;
+                if (xSection === 0) {
+                    threshold = yPos;
+                } else {
+                    threshold = s - yPos;
+                }
+                
+                const xPos = x % (s/2);
+                return xPos < threshold ? intensity : 0.1;
+            },
+            
+            // Pola brick (batu bata)
+            brick: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const row = Math.floor(y / (s/2));
+                const offset = (row % 2) * (s/2);
+                const xBrick = (x + offset) % s;
+                const yBrick = y % (s/2);
+                
+                const borderWidth = s / 10;
+                
+                if (xBrick < borderWidth || yBrick < borderWidth) {
+                    return 0.1;
+                }
+                return intensity;
+            },
+            
+            // Pola grid
+            grid: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const lineWidth = s / 10;
+                const xMod = x % s;
+                const yMod = y % s;
+                
+                if (xMod < lineWidth || yMod < lineWidth) {
+                    return 0.1;
+                }
+                return intensity;
+            },
+            
+            // Pola dotGrid (grid titik)
+            dotGrid: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const dotRadius = s / 10;
+                
+                const dotX = Math.floor(x / s) * s + s / 2;
+                const dotY = Math.floor(y / s) * s + s / 2;
+                
+                const dx = x - dotX;
+                const dy = y - dotY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                return dist < dotRadius ? intensity : 0.1;
+            },
+            
+            // Pola moiré
+            moire: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist1 = Math.sqrt(dx * dx + dy * dy);
+                const dist2 = Math.sqrt((dx*0.9) * (dx*0.9) + (dy*1.1) * (dy*1.1));
+                
+                const s = scale / 5;
+                const val = Math.sin((dist1 - dist2) / s * Math.PI) * 0.5 + 0.5;
+                
+                return val * intensity;
+            },
+            
+            // Pola mandala
+            mandala: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                
+                const s = scale;
+                const petals = 8;
+                const petalVal = Math.cos(angle * petals) * 0.5 + 0.5;
+                const ringVal = Math.cos(dist / s * Math.PI * 2) * 0.5 + 0.5;
+                
+                return (petalVal * ringVal) * intensity;
+            },
+            
+            // Pola mazelike (seperti labirin)
+            mazelike: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const val1 = Math.floor(Math.sin(x / s * 4) * 10) % 2;
+                const val2 = Math.floor(Math.cos(y / s * 4) * 10) % 2;
+                const val = (val1 + val2) % 2;
+                
+                return val * intensity;
+            },
+            
+            // Pola triangles
+            triangles: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const h = s * Math.sqrt(3) / 2;
+                
+                // Convert to triangle grid
+                const gridY = Math.floor(y / h);
+                const isEvenRow = gridY % 2 === 0;
+                const xOffset = isEvenRow ? 0 : s / 2;
+                const gridX = Math.floor((x - xOffset) / s);
+                
+                // Position within the grid cell
+                const cellX = (x - xOffset) % s;
+                const cellY = y % h;
+                
+                // Check if in upper or lower triangle
+                const isUpper = cellY < h - (cellX * h / s);
+                
+                // Variation by position
+                const variation = ((gridX + gridY) % 3) / 3 + 0.5;
+                
+                return ((gridX + gridY) % 2 === 0) !== isUpper ? intensity * variation : 0.1;
+            },
+            
+            // Pola terrace (terasering)
+            terraces: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                const s = scale;
+                const step = Math.floor(dist / s);
+                
+                return (1 - step / (gridSize/2/s)) * intensity;
+            },
+            
+            // Pola vortex
+            vortex: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                
+                const s = scale / 10;
+                const spiral = (angle + dist / s) % (Math.PI * 2);
+                const val = (Math.cos(spiral) * 0.5 + 0.5);
+                
+                return val * intensity;
+            },
+            
+            // Pola woodgrain (serat kayu)
+            woodgrain: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 2;
+                const nx = x / s + Math.sin(y / s / 2) * 2;
+                const grain = Math.sin(nx) * 0.5 + 0.5;
+                
+                // Add some distortion
+                const distortion = Math.sin(x / s / 5 + y / s / 7) * 0.2 + 0.8;
+                
+                return grain * distortion * intensity;
+            },
+            
+            // Pola fingerprint (seperti sidik jari)
+            fingerprint: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                const angle = Math.atan2(dy, dx);
+                
+                const s = scale / 3;
+                const distortion = Math.sin(dist / s / 2) * 0.2;
+                const val = Math.sin(dist / s + angle * 3 + distortion) * 0.5 + 0.5;
+                
+                return val * intensity;
+            },
+            
+            // Pola cellular (seperti sel)
+            cellular: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                let minDist = s;
+                
+                // Cek 9 sel sekitar
+                for (let offX = -1; offX <= 1; offX++) {
+                    for (let offY = -1; offY <= 1; offY++) {
+                        const cellX = Math.floor(x / s) + offX;
+                        const cellY = Math.floor(y / s) + offY;
+                        
+                        // Pseudo-random point dalam cell
+                        const seedX = Math.sin(cellX * 457.1234 + cellY * 123.4567) * 0.5 + 0.5;
+                        const seedY = Math.cos(cellX * 213.7531 + cellY * 321.9574) * 0.5 + 0.5;
+                        
+                        const pointX = (cellX + seedX) * s;
+                        const pointY = (cellY + seedY) * s;
+                        
+                        const dx = x - pointX;
+                        const dy = y - pointY;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        minDist = Math.min(minDist, dist);
+                    }
+                }
+                
+                // Inverse distance for cell edges
+                return (1 - minDist / s) * intensity;
+            },
+            
+            // Pola bubble (gelembung)
+            bubbles: (x, y, gridSize, scale, intensity) => {
+                let val = 0;
+                const s = scale;
+                
+                // Buat beberapa gelembung
+                for (let i = 0; i < 5; i++) {
+                    const seed1 = Math.sin(i * 45.67) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 23.45) * 0.5 + 0.5;
+                    
+                    const bubbleX = gridSize * seed1;
+                    const bubbleY = gridSize * seed2;
+                    const bubbleSize = s * (0.5 + seed1 * 0.5); 
+                    
+                    const dx = x - bubbleX;
+                    const dy = y - bubbleY;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    
+                    // Edge of bubble
+                    const edge = Math.abs(dist - bubbleSize);
+                    const contribution = Math.max(0, 1 - edge / (s/5));
+                    
+                    val = Math.max(val, contribution);
+                }
+                
+                return val * intensity;
+            },
+            
+            // Pola labyrinth (labirin)
+            labyrinth: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const nx = Math.floor(x / s);
+                const ny = Math.floor(y / s);
+                
+                // Sederhana pseudo-random labyrinth
+                const val = Math.abs(Math.sin(nx * 12.345 + ny * 45.678) +
+                                    Math.sin(nx * 45.678 + ny * 12.345));
+                
+                return (val > 1.0) ? intensity : 0.1;
+            },
+            
+            // Pola circuitBoard (papan sirkuit)
+            circuitBoard: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid dasar
+                const gridX = Math.floor(x / s);
+                const gridY = Math.floor(y / s);
+                
+                // Jalur horizontal dan vertikal
+                const seedH = Math.sin(gridY * 123.456) * 100000 % 1;
+                const seedV = Math.cos(gridX * 456.123) * 100000 % 1;
+                
+                const hasHPath = seedH > 0.5;
+                const hasVPath = seedV > 0.5;
+                
+                const xMod = x % s;
+                const yMod = y % s;
+                const pathWidth = s / 4;
+                
+                // Cek apakah pada jalur sirkuit
+                if ((hasHPath && yMod < pathWidth) || 
+                    (hasVPath && xMod < pathWidth) ||
+                    (xMod < pathWidth && yMod < pathWidth)) {
+                    return intensity;
+                }
+                
+                // Component pads
+                const hasPad = (gridX + gridY) % 3 === 0;
+                if (hasPad) {
+                    const padX = (gridX * s) + s/2;
+                    const padY = (gridY * s) + s/2;
+                    const dx = x - padX;
+                    const dy = y - padY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if (dist < s/3) {
+                        return intensity * 0.8;
+                    }
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola psychedelic
+            psychedelic: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 10;
+                const val1 = Math.sin((x + y) / s);
+                const val2 = Math.cos((x - y) / s);
+                const val3 = Math.sin(Math.sqrt(x*x + y*y) / s);
+                
+                const combined = (val1 + val2 + val3) / 3;
+                return (combined * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola weave (anyaman)
+            weave: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const tileSize = s / 2;
+                
+                const tx = Math.floor(x / tileSize);
+                const ty = Math.floor(y / tileSize);
+                
+                const xMod = x % tileSize;
+                const yMod = y % tileSize;
+                
+                // Tentukan apakah thread ini di atas atau di bawah
+                const isOddTile = (tx + ty) % 2 === 1;
+                const isVertical = tx % 2 === 0;
+                
+                if (isVertical) {
+                    return isOddTile ? intensity : intensity * 0.5;
+                } else {
+                    return isOddTile ? intensity * 0.5 : intensity;
+                }
+            },
+            
+            // Pola scales (sisik)
+            scales: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const rowHeight = s * 0.6;
+                
+                // Offset alternating rows
+                const row = Math.floor(y / rowHeight);
+                const offsetX = (row % 2) * (s/2);
+                
+                const scaleCenterX = Math.floor((x + offsetX) / s) * s + s/2 - offsetX;
+                const scaleCenterY = row * rowHeight + rowHeight/2;
+                
+                const dx = x - scaleCenterX;
+                const dy = y - scaleCenterY - rowHeight * 0.2;  // Move center up a bit
+                
+                // Use radial distance for scale shape
+                const dist = Math.sqrt(dx*dx + (dy*1.5)*(dy*1.5));  // Stretch vertically
+                const scaleSize = s * 0.6;
+                
+                if (dist < scaleSize && dy < rowHeight * 0.3) {
+                    // Add some variation based on position
+                    const variation = ((scaleCenterX + scaleCenterY) % 100) / 100 * 0.4 + 0.6;
+                    return intensity * variation;
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola fractals (fraktal sederhana)
+            fractal: (x, y, gridSize, scale, intensity) => {
+                const centerX = gridSize / 2;
+                const centerY = gridSize / 2;
+                const maxIter = 10;
+                
+                let zx = 1.5 * (x - centerX) / (gridSize/2);
+                let zy = (y - centerY) / (gridSize/2);
+                
+                let i = 0;
+                const zoom = scale / 30;
+                
+                zx /= zoom;
+                zy /= zoom;
+                
+                const cx = zx;
+                const cy = zy;
+                
+                while (i < maxIter && (zx*zx + zy*zy) < 4) {
+                    const tmp = zx*zx - zy*zy + cx;
+                    zy = 2*zx*zy + cy;
+                    zx = tmp;
+                    i++;
+                }
+                
+                return (i / maxIter) * intensity;
+            },
+            
+            // Pola camouflage
+            camouflage: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Generate several random blobs
+                let val = 0;
+                for (let i = 0; i < 5; i++) {
+                    // Random blob centers
+                    const seed1 = Math.sin(i * 123.456) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 456.123) * 0.5 + 0.5;
+                    const seed3 = Math.tan(i * 789.012) * 0.5 + 0.5;
+                    
+                    const blobX = gridSize * seed1;
+                    const blobY = gridSize * seed2;
+                    const blobSize = s * 2 * (seed3 + 0.5);
+                    
+                    const dx = x - blobX;
+                    const dy = y - blobY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Distort the shape
+                    const distortion = Math.sin(x/s * 0.5 + y/s * 0.5 + i * 789);
+                    const effectiveSize = blobSize * (0.8 + distortion * 0.2);
+                    
+                    if (dist < effectiveSize) {
+                        val = Math.max(val, 1 - dist/effectiveSize);
+                    }
+                }
+                
+                const colorIndex = Math.floor(val * 3);  // 3 color camouflage
+                return (colorIndex / 3 + 0.2) * intensity;
+            },
+            
+            // Pola islamic (geometri Islamic art)
+            islamic: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Buat grid hexagon
+                const hexSize = s;
+                const hexHeight = hexSize * Math.sqrt(3);
+                
+                // Convert ke koordinat hex
+                const col = Math.floor(x / (hexSize * 1.5));
+                const row = Math.floor(y / hexHeight);
+                
+                const colOffset = col * hexSize * 1.5;
+                const rowOffset = row * hexHeight;
+                const rowIsEven = row % 2 === 0;
+                const xOffset = rowIsEven ? 0 : hexSize * 0.75;
+                
+                // Titik pusat hex
+                const centerX = colOffset + hexSize + xOffset;
+                const centerY = rowOffset + hexHeight / 2;
+                
+                // Jarak dari pusat
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Angle dari pusat
+                const angle = Math.atan2(dy, dx);
+                const rotSector = Math.floor((angle + Math.PI) / (Math.PI/3));
+                
+                // Pola dalam hexagon
+                const normDist = dist / hexSize;
+                if (normDist < 1) {
+                    // Inner star pattern
+                    const angleVal = Math.abs(Math.cos(angle * 6)) * 0.7 + 0.3;
+                    const radialVal = (1 - normDist) * 0.7 + normDist * 0.3;
+                    return (angleVal * radialVal) * intensity;
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola marble (marmer)
+            marble: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 5;
+                let noiseVal = 0;
+                
+                // Multi-layer noise
+                for (let i = 1; i <= 4; i++) {
+                    const freq = i / s;
+                    noiseVal += Math.sin((x * freq + y * freq * 0.7) + 
+                                Math.sin(x * freq * 0.5 + y * freq * 0.8)) / i;
+                }
+                
+                noiseVal = Math.abs(noiseVal) * 0.5 + 0.5;
+                return noiseVal * intensity;
+            },
+            
+            // Pola cityBlocks (seperti peta kota)
+            cityBlocks: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const roadWidth = s / 5;
+                
+                const blockX = Math.floor(x / s);
+                const blockY = Math.floor(y / s);
+                
+                const xMod = x % s;
+                const yMod = y % s;
+                
+                // Check if on a road
+                if (xMod < roadWidth || yMod < roadWidth) {
+                    return 0.1;
+                }
+                
+                // Some blocks are "parks" or empty
+                const blockType = (Math.sin(blockX * 123.456 + blockY * 789.123) * 0.5 + 0.5) * 10;
+                if (blockType < 2) {
+                    return 0.3;
+                }
+                
+                // Building height/density varies by block
+                const blockDensity = (Math.cos(blockX * 456.789 + blockY * 234.567) * 0.5 + 0.5);
+                return blockDensity * intensity;
+            },
+            
+            // Pola raindrops (tetesan hujan)
+            raindrops: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                let val = 0;
+                
+                // Buat beberapa tetesan hujan
+                for (let i = 0; i < 20; i++) {
+                    const seed1 = Math.sin(i * 123.456) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 789.012) * 0.5 + 0.5;
+                    const seed3 = Math.sin(i * 345.678) * 0.5 + 0.5;
+                    
+                    const dropX = gridSize * seed1;
+                    const dropY = gridSize * seed2;
+                    const dropSize = s * 0.3 * (seed3 + 0.5);
+                    
+                    // Bentuk tetesan hujan (lebih panjang di bawah)
+                    const dx = x - dropX;
+                    const dy = (y - dropY) * 0.7;  // Stretch vertically
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Ripple effect
+                    const ripple = Math.cos(dist / (dropSize * 0.2)) * 0.5 + 0.5;
+                    
+                    if (dist < dropSize) {
+                        const contribution = ripple * (1 - dist/dropSize);
+                        val = Math.max(val, contribution);
+                    }
+                }
+                
+                return val * intensity;
+            },
+            
+            // Pola crossroads (persimpangan jalan)
+            crossroads: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const roadWidth = s / 3;
+                
+                // Jalur horizontal dan vertikal
+                const xMod = x % s;
+                const yMod = y % s;
+                
+                // Jika berada di jalan
+                if (xMod < roadWidth || yMod < roadWidth) {
+                    // Persimpangan
+                    if (xMod < roadWidth && yMod < roadWidth) {
+                        return intensity * 0.8;
+                    }
+                    return intensity * 0.5;
+                }
+                
+                // Blok bangunan
+                const blockX = Math.floor(x / s);
+                const blockY = Math.floor(y / s);
+                const blockType = ((blockX + blockY) % 3);
+                
+                return (0.2 + blockType * 0.2) * intensity;
+            },
+            
+            // Pola tiling (ubin)
+            tiling: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                const gap = s / 20;  // Gap antar ubin
+                
+                const tileX = Math.floor(x / s);
+                const tileY = Math.floor(y / s);
+                
+                const xMod = x % s;
+                const yMod = y % s;
+                
+                // Gap antar ubin
+                if (xMod < gap || yMod < gap) {
+                    return 0.1;
+                }
+                
+                // Variasi ubin berdasarkan posisi
+                const tileVariation = (tileX + tileY) % 4;
+                const tileIntensity = 0.5 + (tileVariation / 4) * 0.5;
+                
+                return tileIntensity * intensity;
+            },
+            
+            // Pola dunes (bukit pasir)
+            dunes: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 2;
+                
+                let val = 0;
+                for (let i = 1; i <= 3; i++) {
+                    val += Math.sin(x / s / i + Math.sin(y / s / (i+1))) / i;
+                }
+                
+                val = val * 0.5 + 0.5;
+                return val * intensity;
+            },
+            
+            // Pola crystals (kristal)
+            crystals: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Pusat kristal
+                const numCrystals = 8;
+                let val = 0;
+                
+                for (let i = 0; i < numCrystals; i++) {
+                    const seed1 = Math.sin(i * 123.456) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 789.012) * 0.5 + 0.5;
+                    
+                    const crystalX = gridSize * seed1;
+                    const crystalY = gridSize * seed2;
+                    
+                    const dx = x - crystalX;
+                    const dy = y - crystalY;
+                    
+                    // Angle from center
+                    const angle = Math.atan2(dy, dx);
+                    
+                    // Crystal shape - angular with points
+                    const points = 3 + (i % 5);
+                    const angleVal = Math.cos(angle * points) * 0.5 + 0.5;
+                    
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    const maxDist = s * 2;
+                    
+                    if (dist < maxDist) {
+                        const distFactor = (1 - dist/maxDist);
+                        const contribution = angleVal * distFactor;
+                        val = Math.max(val, contribution);
+                    }
+                }
+                
+                return val * intensity;
+            },
+            
+            // Pola floral (bunga)
+            floral: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Beberapa pusat bunga
+                const numFlowers = 6;
+                let val = 0;
+                
+                for (let i = 0; i < numFlowers; i++) {
+                    const seed1 = Math.sin(i * 123.456) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 789.012) * 0.5 + 0.5;
+                    
+                    const flowerX = gridSize * seed1;
+                    const flowerY = gridSize * seed2;
+                    
+                    const dx = x - flowerX;
+                    const dy = y - flowerY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    // Flower petals
+                    const angle = Math.atan2(dy, dx);
+                    const petals = 5 + (i % 3);
+                    const petalVal = Math.cos(angle * petals) * 0.5 + 0.5;
+                    
+                    const flowerSize = s * 1.5;
+                    if (dist < flowerSize) {
+                        const normalized = dist / flowerSize;
+                        
+                        // Flower center
+                        if (dist < flowerSize * 0.2) {
+                            val = Math.max(val, 0.8);
+                        } 
+                        // Petals
+                        else {
+                            const petalDist = Math.pow(normalized, 0.5);
+                            const contribution = petalVal * (1 - petalDist);
+                            val = Math.max(val, contribution);
+                        }
+                    }
+                }
+                
+                return val * intensity;
+            },
+            
+            // Pola circuitry (sirkuit)
+            circuitry: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Basis grid
+                const gridX = Math.floor(x / (s/4));
+                const gridY = Math.floor(y / (s/4));
+                
+                // Seed untuk menentukan apakah ada jalur di lokasi ini
+                const hasSeedX = Math.sin(gridX * 123.456) * 0.5 + 0.5;
+                const hasSeedY = Math.cos(gridY * 789.012) * 0.5 + 0.5;
+                
+                // Jalur horizontal dan vertikal
+                const hasHorzPath = hasSeedX > 0.7;
+                const hasVertPath = hasSeedY > 0.7;
+                
+                const xMod = x % (s/4);
+                const yMod = y % (s/4);
+                const pathWidth = s / 16;
+                
+                // Jalur sirkuit
+                if ((hasHorzPath && yMod < pathWidth) || 
+                    (hasVertPath && xMod < pathWidth)) {
+                    return intensity;
+                }
+                
+                // Nodes/komponen
+                const isCrossing = hasHorzPath && hasVertPath;
+                if (isCrossing && xMod < pathWidth && yMod < pathWidth) {
+                    return intensity * 0.8;
+                }
+                
+                // Komponen elektronik
+                const isComponent = (gridX + gridY) % 7 === 0;
+                if (isComponent) {
+                    const compX = gridX * (s/4) + (s/8);
+                    const compY = gridY * (s/4) + (s/8);
+                    const dx = x - compX;
+                    const dy = y - compY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < s/10) {
+                        return intensity * 0.6;
+                    }
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola bark (kulit kayu)
+            bark: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 3;
+                
+                // Vertical lines with distortion
+                const baseX = x / s;
+                const distortion = Math.sin(y / s / 2) * 2;
+                const distortedX = baseX + distortion;
+                
+                // Multiple layers of detail
+                let val = 0;
+                for (let i = 1; i <= 3; i++) {
+                    val += Math.sin(distortedX * i + y / s / i) / i;
+                    val += Math.sin(y / s / i) / (i * 5);  // Horizontal rings
+                }
+                
+                val = Math.abs(val) * 0.7 + 0.3;
+                return val * intensity;
+            },
+            
+            // Pola runes (simbol rune)
+            runes: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid untuk simbol
+                const gridX = Math.floor(x / s);
+                const gridY = Math.floor(y / s);
+                
+                // Seed untuk menentukan tipe simbol
+                const runeType = Math.floor((Math.sin(gridX * 123.456 + gridY * 789.012) * 0.5 + 0.5) * 8);
+                
+                // Posisi dalam cell
+                const xMod = (x % s) / s;
+                const yMod = (y % s) / s;
+                
+                // Stroke width
+                const strokeWidth = 0.15;
+                
+                // Different rune patterns
+                switch (runeType) {
+                    case 0: // Vertical line
+                        return (xMod > 0.4 && xMod < 0.6) ? intensity : 0.1;
+                    case 1: // Horizontal line
+                        return (yMod > 0.4 && yMod < 0.6) ? intensity : 0.1;
+                    case 2: // Cross
+                        return ((xMod > 0.4 && xMod < 0.6) || (yMod > 0.4 && yMod < 0.6)) ? intensity : 0.1;
+                    case 3: // Triangle
+                        return ((xMod + yMod < 0.6) || (Math.abs(xMod - 0.5) < strokeWidth)) ? intensity : 0.1;
+                    case 4: // Circle
+                        const cx = xMod - 0.5;
+                        const cy = yMod - 0.5;
+                        const dist = Math.sqrt(cx*cx + cy*cy);
+                        return (Math.abs(dist - 0.3) < strokeWidth) ? intensity : 0.1;
+                    case 5: // Diagonal
+                        return (Math.abs(xMod - yMod) < strokeWidth) ? intensity : 0.1;
+                    case 6: // Inverse diagonal
+                        return (Math.abs(xMod + yMod - 1) < strokeWidth) ? intensity : 0.1;
+                    case 7: // Box
+                        return ((xMod < strokeWidth || xMod > 1-strokeWidth || 
+                                yMod < strokeWidth || yMod > 1-strokeWidth)) ? intensity : 0.1;
+                    default:
+                        return 0.1;
+                }
+            },
+            
+            // Pola circuits (sirkuit kompleks)
+            circuits: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Multi-scale grid
+                const grid1 = Math.floor(x / s);
+                const grid2 = Math.floor(y / s);
+                const grid3 = Math.floor(x / (s/4));
+                const grid4 = Math.floor(y / (s/4));
+                
+                // Tentukan elemen sirkuit berdasarkan posisi
+                const elementType = Math.floor((Math.sin(grid1 * 123.456 + grid2 * 789.012) * 0.5 + 0.5) * 4);
+                
+                // Posisi dalam cell besar
+                const xMod = x % s;
+                const yMod = y % s;
+                
+                // Posisi dalam cell kecil
+                const xModSmall = x % (s/4);
+                const yModSmall = y % (s/4);
+                
+                // Path width
+                const pathWidth = s / 12;
+                const smallPathWidth = s / 20;
+                
+                // Elemen-elemen sirkuit
+                switch (elementType) {
+                    case 0: // Chip
+                        if (xMod > s/4 && xMod < s*3/4 && yMod > s/4 && yMod < s*3/4) {
+                            // Pin chip
+                            if ((xMod < s/3 || xMod > s*2/3) && (yMod % (s/8) < s/16)) {
+                                return intensity * 0.8;
+                            }
+                            return intensity * 0.6;
+                        }
+                        break;
+                    case 1: // Capacitor
+                        if ((Math.abs(xMod - s/2) < pathWidth) && (yMod > s/3 && yMod < s*2/3)) {
+                            return intensity * 0.7;
+                        }
+                        if ((Math.abs(yMod - s/3) < pathWidth || Math.abs(yMod - s*2/3) < pathWidth) && 
+                            (xMod > s/2 - s/6 && xMod < s/2 + s/6)) {
+                            return intensity * 0.7;
+                        }
+                        break;
+                    case 2: // Resistor
+                        if ((Math.abs(xMod - s/2) < pathWidth) && (yMod < s/3 || yMod > s*2/3)) {
+                            return intensity * 0.7;
+                        }
+                        if (yMod > s/3 && yMod < s*2/3 && xMod > s/4 && xMod < s*3/4) {
+                            return intensity * 0.5;
+                        }
+                        break;
+                    case 3: // Wiring
+                        // Small grid interconnections
+                        const hasHorzWire = Math.sin(grid3 * 456.789) > 0;
+                        const hasVertWire = Math.cos(grid4 * 567.891) > 0;
+                        
+                        if ((hasHorzWire && yModSmall < smallPathWidth) ||
+                            (hasVertWire && xModSmall < smallPathWidth)) {
+                            return intensity * 0.7;
+                        }
+                        break;
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola mosaic (mosaik)
+            mosaic: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid untuk tiles
+                const tileX = Math.floor(x / s);
+                const tileY = Math.floor(y / s);
+                
+                // Seed untuk variasi tile
+                const tileType = Math.floor((Math.sin(tileX * 123.456 + tileY * 789.012) * 0.5 + 0.5) * 5);
+                
+                // Position within tile
+                const xMod = (x % s) / s;
+                const yMod = (y % s) / s;
+                
+                // Tile gap
+                const gap = 0.05;
+                if (xMod < gap || xMod > 1-gap || yMod < gap || yMod > 1-gap) {
+                    return 0.1;
+                }
+                
+                // Normalisasi koordinat untuk menghindari gap
+                const nx = (xMod - gap) / (1 - 2*gap);
+                const ny = (yMod - gap) / (1 - 2*gap);
+                
+                // Berbagai pola tile
+                switch (tileType) {
+                    case 0: // Concentric squares
+                        const sqDist = Math.max(Math.abs(nx - 0.5), Math.abs(ny - 0.5)) * 2;
+                        return (Math.cos(sqDist * 6) * 0.5 + 0.5) * intensity;
+                    case 1: // Diagonal lines
+                        const diag = (nx + ny) / 2;
+                        return (Math.cos(diag * 8) * 0.5 + 0.5) * intensity;
+                    case 2: // Radial
+                        const rx = nx - 0.5;
+                        const ry = ny - 0.5;
+                        const angle = Math.atan2(ry, rx);
+                        return (Math.cos(angle * 6) * 0.5 + 0.5) * intensity;
+                    case 3: // Grid
+                        const gridPattern = Math.cos(nx * 6) * Math.cos(ny * 6);
+                        return (gridPattern * 0.5 + 0.5) * intensity;
+                    case 4: // Solid with variation
+                        // Subtle variation based on position
+                        return ((tileX + tileY) % 3 / 3 + 0.5) * intensity;
+                    default:
+                        return 0.5 * intensity;
+                }
+            },
+            
+            // Pola aurora (seperti aurora borealis)
+            aurora: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Base horizontal wave
+                const baseY = y / s;
+                
+                // Multi-layer waves
+                let val = 0;
+                for (let i = 1; i <= 3; i++) {
+                    const freq = i * 2;
+                    const amp = 1 / i;
+                    const phase = Math.sin(x / s / 5 * i);
+                    
+                    // Vertical position of this wave layer
+                    const waveY = baseY + amp * Math.sin(x / s / 2 * freq + phase);
+                    
+                    // Contribution from this wave layer
+                    const yDist = Math.abs(waveY - Math.floor(baseY));
+                    const contribution = Math.exp(-yDist * i * 5);
+                    
+                    val += contribution / i;
+                }
+                
+                // Add color variation (vertical gradient)
+                const colorVar = (y % gridSize) / gridSize;
+                val = val * (0.7 + colorVar * 0.3);
+                
+                return val * intensity;
+            },
+            
+            // Pola interference (interferensi gelombang)
+            interference: (x, y, gridSize, scale, intensity) => {
+                const s = scale / 5;
+                
+                // Dua sumber gelombang
+                const source1X = gridSize * 0.3;
+                const source1Y = gridSize * 0.3;
+                const source2X = gridSize * 0.7;
+                const source2Y = gridSize * 0.7;
+                
+                // Jarak dari sumber
+                const d1 = Math.sqrt((x - source1X)**2 + (y - source1Y)**2);
+                const d2 = Math.sqrt((x - source2X)**2 + (y - source2Y)**2);
+                
+                // Interferensi gelombang
+                const val = Math.cos((d1 - d2) / s);
+                
+                return (val * 0.5 + 0.5) * intensity;
+            },
+            
+            // Pola maze (labirin)
+            maze: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid untuk sel labirin
+                const cellX = Math.floor(x / s);
+                const cellY = Math.floor(y / s);
+                
+                // Deterministically choose wall configuration
+                const seed = Math.sin(cellX * 123.456 + cellY * 789.012) * 1000000;
+                const wallConfig = Math.floor(Math.abs(seed) % 16);  // 4 walls -> 16 configs
+                
+                // Relative position in cell
+                const xMod = (x % s) / s;
+                const yMod = (y % s) / s;
+                
+                // Wall thickness
+                const wallThickness = 0.2;
+                
+                // Cell walls
+                const hasNorthWall = (wallConfig & 1) !== 0;
+                const hasEastWall = (wallConfig & 2) !== 0;
+                const hasSouthWall = (wallConfig & 4) !== 0;
+                const hasWestWall = (wallConfig & 8) !== 0;
+                
+                // Check if on walls
+                if ((hasNorthWall && yMod < wallThickness) ||
+                    (hasEastWall && xMod > 1 - wallThickness) ||
+                    (hasSouthWall && yMod > 1 - wallThickness) ||
+                    (hasWestWall && xMod < wallThickness)) {
+                    return intensity;
+                }
+                
+                return 0.1;
+            },
+            
+            // Pola qrcode (seperti QR code)
+            qrcode: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid untuk pixel QR
+                const cellX = Math.floor(x / (s/5));
+                const cellY = Math.floor(y / (s/5));
+                
+                // Seed untuk menentukan apakah pixel diisi atau tidak
+                const isFilledSeed = Math.sin(cellX * 123.456 + cellY * 789.012) * 1000000;
+                const isFilled = Math.abs(isFilledSeed) % 2 === 0;
+                
+                // QR finder patterns (kotak di sudut)
+                const size = gridSize / (s/5);
+                const finderSize = 7;
+                
+                // Kiri atas
+                if ((cellX < finderSize && cellY < finderSize) ||
+                    // Kanan atas
+                    (cellX > size - finderSize && cellY < finderSize) ||
+                    // Kiri bawah
+                    (cellX < finderSize && cellY > size - finderSize)) {
+                    
+                    // Outer border
+                    if (cellX === 0 || cellX === 6 || cellY === 0 || cellY === 6 ||
+                        cellX === size - 7 || cellX === size - 1 ||
+                        cellY === size - 7 || cellY === size - 1) {
+                        return intensity;
+                    }
+                    
+                    // Inner border
+                    if (cellX === 2 || cellX === 3 || cellX === 4 || 
+                        cellY === 2 || cellY === 3 || cellY === 4 ||
+                        cellX === size - 5 || cellX === size - 4 || cellX === size - 3 ||
+                        cellY === size - 5 || cellY === size - 4 || cellY === size - 3) {
+                        return intensity;
+                    }
+                    
+                    return 0.1;
+                }
+                
+                // Timing patterns
+                if (cellY === 6 || cellX === 6) {
+                    return (cellX + cellY) % 2 === 0 ? intensity : 0.1;
+                }
+                
+                // Other cells
+                return isFilled ? intensity : 0.1;
+            },
+            
+            // Pola voronoi
+            voronoi: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Jumlah titik Voronoi
+                const numPoints = 20;
+                let minDist = gridSize;
+                let secondMinDist = gridSize;
+                
+                // Hitung jarak ke semua titik
+                for (let i = 0; i < numPoints; i++) {
+                    const seed1 = Math.sin(i * 123.456) * 0.5 + 0.5;
+                    const seed2 = Math.cos(i * 789.012) * 0.5 + 0.5;
+                    
+                    const pointX = gridSize * seed1;
+                    const pointY = gridSize * seed2;
+                    
+                    const dx = x - pointX;
+                    const dy = y - pointY;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if (dist < minDist) {
+                        secondMinDist = minDist;
+                        minDist = dist;
+                    } else if (dist < secondMinDist) {
+                        secondMinDist = dist;
+                    }
+                }
+                
+                // Edge between regions
+                const edgeWidth = s / 10;
+                const edgeFactor = Math.abs(secondMinDist - minDist);
+                
+                if (edgeFactor < edgeWidth) {
+                    return 0.1;
+                }
+                
+                // Interior of cell
+                return (0.3 + minDist / gridSize * 0.7) * intensity;
+            },
+            
+            // Pola reptile (sisik reptil)
+            reptile: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Staggered row offset
+                const rowHeight = s * 0.5;
+                const row = Math.floor(y / rowHeight);
+                const offset = (row % 2) * (s/2);
+                
+                // Pusat sisik
+                const scaleX = Math.floor((x + offset) / s) * s - offset + s/2;
+                const scaleY = row * rowHeight + rowHeight/2;
+                
+                const dx = x - scaleX;
+                const dy = y - scaleY;
+                
+                // Sisik berbentuk oval
+                const nx = dx / (s*0.4);
+                const ny = dy / (s*0.25);
+                const dist = Math.sqrt(nx*nx + ny*ny);
+                
+                // Edge of scale
+                if (Math.abs(dist - 1) < 0.1) {
+                    return 0.1;
+                }
+                
+                // Interior dengan tekstur
+                if (dist < 1) {
+                    return (0.4 + Math.sin(dist * 3) * 0.1) * intensity;
+                }
+                
+                return 0.2;
+            },
+            
+            // Pola snowflakes (kepingan salju)
+            snowflakes: (x, y, gridSize, scale, intensity) => {
+                const s = scale;
+                
+                // Grid untuk kepingan salju
+                const flakeX = Math.floor(x / s) * s + s/2;
+                const flakeY = Math.floor(y / s) * s + s/2;
+                
+                const dx = x - flakeX;
+                const dy = y - flakeY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                // Hanya buat salju di jarak tertentu dari pusat
+                if (dist > s*0.4) {
+                    return 0.1;
+                }
+                
+                // Pola salju dengan 6 axis
+                const angle = Math.atan2(dy, dx);
+                const normAngle = ((angle + Math.PI) / (Math.PI*2)) * 6;
+                const armVal = Math.cos(normAngle * Math.PI);
+                
+                // Beberapa detail untuk kepingan salju
+                let val = 0;
+                
+                // Main arms
+                if (Math.abs(armVal) > 0.9) {
+                    val = 1;
+                }
+                
+                // Side branches
+                const branchDist = (dist / s * 5) % 1;
+                if (Math.abs(armVal) > 0.7 && branchDist < 0.2) {
+                    val = 1;
+                }
+                
+                // Central disk
+                if (dist < s*0.05) {
+                    val = 1;
+                }
+                
+                return val * intensity;
+            }
+        };
+        
+        // Fungsi utilitas warna
+        const colorUtils = {
+            // Konversi HSL ke RGB
+            hslToRgb: (h, s, l) => {
+                let r, g, b;
+                
+                if (s === 0) {
+                    r = g = b = l; // achromatic
+                } else {
+                    const hue2rgb = (p, q, t) => {
+                        if (t < 0) t += 1;
+                        if (t > 1) t -= 1;
+                        if (t < 1/6) return p + (q - p) * 6 * t;
+                        if (t < 1/2) return q;
+                        if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                        return p;
+                    };
+                    
+                    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                    const p = 2 * l - q;
+                    
+                    r = hue2rgb(p, q, h + 1/3);
+                    g = hue2rgb(p, q, h);
+                    b = hue2rgb(p, q, h - 1/3);
+                }
+                
+                return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+            },
+            
+            // Konversi RGB ke hex
+            rgbToHex: (r, g, b) => {
+                return (r << 16) | (g << 8) | b;
+            },
+            
+            // Konversi hex ke RGB
+            hexToRgb: (hex) => {
+                const r = (hex >> 16) & 255;
+                const g = (hex >> 8) & 255;
+                const b = hex & 255;
+                return [r, g, b];
+            },
+            
+            // Konversi RGB ke HSL
+            rgbToHsl: (r, g, b) => {
+                r /= 255;
+                g /= 255;
+                b /= 255;
+                
+                const max = Math.max(r, g, b);
+                const min = Math.min(r, g, b);
+                let h, s, l = (max + min) / 2;
+                
+                if (max === min) {
+                    h = s = 0; // achromatic
+                } else {
+                    const d = max - min;
+                    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+                    
+                    switch (max) {
+                        case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                        case g: h = (b - r) / d + 2; break;
+                        case b: h = (r - g) / d + 4; break;
+                    }
+                    
+                    h /= 6;
+                }
+                
+                return [h, s, l];
+            },
+            
+            // Dapatkan warna berdasarkan skema warna
+            getColorFromScheme: (baseColor, value, index, total) => {
+                const [r, g, b] = colorUtils.hexToRgb(baseColor);
+                const [h, s, l] = colorUtils.rgbToHsl(r, g, b);
+                
+                let newH = h;
+                let newS = s;
+                let newL = l * settings.brightness;
+                
+                switch (settings.colorScheme) {
+                    case 'rainbow':
+                        // Warna pelangi berdasarkan posisi
+                        newH = index / total;
+                        newS = 0.7 + (value * 0.3 * settings.colorVariation);
+                        newL = 0.4 + (value * 0.3 * settings.brightness);
+                        break;
+                        
+                    case 'complementary':
+                        // Warna komplementer (berlawanan di roda warna)
+                        newH = (h + (value * 0.5 * settings.colorVariation)) % 1.0;
+                        newS = s * (0.7 + (value * 0.3));
+                        newL = l * (0.7 + (value * 0.3 * settings.brightness));
+                        break;
+                        
+                    case 'monochromatic':
+                        // Warna monokromatik (variasi kecerahan dan saturasi)
+                        newS = s * (0.5 + (value * 0.5 * settings.colorVariation));
+                        newL = 0.3 + (value * 0.5 * settings.brightness);
+                        break;
+                        
+                    case 'analogous':
+                        // Warna analogus (berdekatan di roda warna)
+                        newH = (h + (value * 0.2 * settings.colorVariation)) % 1.0;
+                        newS = s * (0.7 + (value * 0.3));
+                        newL = l * (0.7 + (value * 0.3 * settings.brightness));
+                        break;
+                        
+                    case 'triadic':
+                        // Warna triadic (tiga warna dengan jarak sama di roda warna)
+                        newH = (h + (Math.floor(index % 3) / 3)) % 1.0;
+                        newS = 0.7 + (value * 0.3 * settings.colorVariation);
+                        newL = 0.4 + (value * 0.3 * settings.brightness);
+                        break;
+                        
+                    case 'custom':
+                    default:
+                        // Gunakan warna dasar dengan variasi
+                        newS = s * (0.8 + (value * 0.2));
+                        newL = l * (0.7 + (value * 0.3 * settings.brightness));
+                        break;
+                }
+                
+                // Batasi nilai
+                newS = Math.min(1, Math.max(0, newS));
+                newL = Math.min(1, Math.max(0.1, newL));
+                
+                const [nr, ng, nb] = colorUtils.hslToRgb(newH, newS, newL);
+                return colorUtils.rgbToHex(nr, ng, nb);
+            },
+            
+            // Dapatkan warna untuk preview
+            getPreviewColors: (baseColor) => {
+                const colors = [];
+                const [r, g, b] = colorUtils.hexToRgb(baseColor);
+                const [h, s, l] = colorUtils.rgbToHsl(r, g, b);
+                
+                switch (settings.colorScheme) {
+                    case 'rainbow':
+                        for (let i = 0; i < 6; i++) {
+                            const newH = i / 6;
+                            const [nr, ng, nb] = colorUtils.hslToRgb(newH, 0.8, 0.5);
+                            colors.push(colorUtils.rgbToHex(nr, ng, nb));
+                        }
+                        break;
+                        
+                    case 'complementary':
+                        // Warna dasar
+                        colors.push(baseColor);
+                        // Warna komplementer
+                        const [nr1, ng1, nb1] = colorUtils.hslToRgb((h + 0.5) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr1, ng1, nb1));
+                        // Variasi
+                        const [nr2, ng2, nb2] = colorUtils.hslToRgb((h + 0.1) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr2, ng2, nb2));
+                        const [nr3, ng3, nb3] = colorUtils.hslToRgb((h + 0.6) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr3, ng3, nb3));
+                        const [nr4, ng4, nb4] = colorUtils.hslToRgb((h + 0.2) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr4, ng4, nb4));
+                        const [nr5, ng5, nb5] = colorUtils.hslToRgb((h + 0.7) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr5, ng5, nb5));
+                        break;
+                        
+                    case 'monochromatic':
+                        for (let i = 0; i < 6; i++) {
+                            const newL = 0.2 + (i * 0.15);
+                            const newS = 0.5 + (i * 0.08);
+                            const [nr, ng, nb] = colorUtils.hslToRgb(h, Math.min(1, newS), Math.min(1, newL));
+                            colors.push(colorUtils.rgbToHex(nr, ng, nb));
+                        }
+                        break;
+                        
+                    case 'analogous':
+                        for (let i = 0; i < 6; i++) {
+                            const newH = (h + (i - 3) * 0.05) % 1.0;
+                            const [nr, ng, nb] = colorUtils.hslToRgb(newH, s, l);
+                            colors.push(colorUtils.rgbToHex(nr, ng, nb));
+                        }
+                        break;
+                        
+                    case 'triadic':
+                        // Warna dasar
+                        colors.push(baseColor);
+                        // Warna triadic
+                        const [nr6, ng6, nb6] = colorUtils.hslToRgb((h + 1/3) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr6, ng6, nb6));
+                        const [nr7, ng7, nb7] = colorUtils.hslToRgb((h + 2/3) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr7, ng7, nb7));
+                        // Variasi
+                        const [nr8, ng8, nb8] = colorUtils.hslToRgb((h + 0.1) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr8, ng8, nb8));
+                        const [nr9, ng9, nb9] = colorUtils.hslToRgb((h + 0.4) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr9, ng9, nb9));
+                        const [nr10, ng10, nb10] = colorUtils.hslToRgb((h + 0.7) % 1.0, s, l);
+                        colors.push(colorUtils.rgbToHex(nr10, ng10, nb10));
+                        break;
+                        
+                    case 'custom':
+                    default:
+                        // Warna dasar dan variasi
+                        colors.push(baseColor);
+                        for (let i = 1; i < 6; i++) {
+                            const newH = (h + (i * 0.1)) % 1.0;
+                            const newS = Math.min(1, s * (1 + (i * 0.05)));
+                            const newL = Math.min(0.9, Math.max(0.3, l * (1 + ((i - 3) * 0.1))));
+                            const [nr, ng, nb] = colorUtils.hslToRgb(newH, newS, newL);
+                            colors.push(colorUtils.rgbToHex(nr, ng, nb));
+                        }
+                        break;
+                }
+                
+                return colors;
+            }
+        };
+        
+        // Fungsi untuk menghitung posisi paku berdasarkan distribusi
+        function calculateNailPositions() {
+            const positions = [];
+            const gridSize = settings.nailGrid;
+            const minSpacing = settings.nailRadius * 2.5; // Jarak minimum antar paku
+            
+            // Hitung jarak antar paku berdasarkan distribusi
+            switch(settings.spacingDistribution) {
+                case 'center':
+                    // Paku lebih padat di tengah, renggang di tepi
+                    for (let z = 0; z < gridSize; z++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            // Normalisasi posisi (-1 hingga 1, dengan 0 di tengah)
+                            const nx = (x / (gridSize - 1)) * 2 - 1;
+                            const nz = (z / (gridSize - 1)) * 2 - 1;
+                            
+                            // Hitung jarak dari tengah (0-1)
+                            const distFromCenter = Math.sqrt(nx * nx + nz * nz) / Math.sqrt(2);
+                            
+                            // Jarak lebih rapat di tengah, renggang di tepi
+                            const spacingFactor = minSpacing + (settings.nailSpacing * distFromCenter);
+                            
+                            // Hitung posisi dengan spacing yang bervariasi
+                            const posX = nx * (settings.nailSpacing * (gridSize - 1) / 2) * (1 + (spacingFactor - 1) * distFromCenter);
+                            const posZ = nz * (settings.nailSpacing * (gridSize - 1) / 2) * (1 + (spacingFactor - 1) * distFromCenter);
+                            
+                            positions.push({ x: posX, z: posZ });
+                        }
+                    }
+                    break;
+                    
+                case 'edges':
+                    // Paku lebih padat di tepi, renggang di tengah
+                    for (let z = 0; z < gridSize; z++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            // Normalisasi posisi (-1 hingga 1, dengan 0 di tengah)
+                            const nx = (x / (gridSize - 1)) * 2 - 1;
+                            const nz = (z / (gridSize - 1)) * 2 - 1;
+                            
+                            // Hitung jarak dari tengah (0-1)
+                            const distFromCenter = Math.sqrt(nx * nx + nz * nz) / Math.sqrt(2);
+                            
+                            // Jarak lebih rapat di tepi, renggang di tengah
+                            const spacingFactor = minSpacing + (settings.nailSpacing * (1 - distFromCenter));
+                            
+                            // Hitung posisi dengan spacing yang bervariasi
+                            const posX = nx * (settings.nailSpacing * (gridSize - 1) / 2) * (1 + (spacingFactor - 1) * (1 - distFromCenter));
+                            const posZ = nz * (settings.nailSpacing * (gridSize - 1) / 2) * (1 + (spacingFactor - 1) * (1 - distFromCenter));
+                            
+                            positions.push({ x: posX, z: posZ });
+                        }
+                    }
+                    break;
+                    
+                case 'random':
+                    // Distribusi acak tapi teratur (jittered grid)
+                    const baseSpacing = settings.nailSpacing;
+                    const jitterAmount = baseSpacing * 0.2;
+                    
+                    for (let z = 0; z < gridSize; z++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            // Posisi dasar pada grid
+                            let posX = (x * baseSpacing) - (baseSpacing * (gridSize - 1) / 2);
+                            let posZ = (z * baseSpacing) - (baseSpacing * (gridSize - 1) / 2);
+                            
+                            // Tambahkan jitter (variasi acak)
+                            posX += (Math.random() * 2 - 1) * jitterAmount;
+                            posZ += (Math.random() * 2 - 1) * jitterAmount;
+                            
+                            positions.push({ x: posX, z: posZ });
+                        }
+                    }
+                    break;
+                    
+                case 'uniform':
+                default:
+                    // Distribusi seragam (grid biasa)
+                    const spacing = settings.nailSpacing;
+                    
+                    for (let z = 0; z < gridSize; z++) {
+                        for (let x = 0; x < gridSize; x++) {
+                            const posX = (x * spacing) - (spacing * (gridSize - 1) / 2);
+                            const posZ = (z * spacing) - (spacing * (gridSize - 1) / 2);
+                            positions.push({ x: posX, z: posZ });
+                        }
+                    }
+                    break;
+            }
+            
+            // Validasi posisi untuk menghindari tabrakan
+            const validPositions = [];
+            const minDistance = settings.nailRadius * 2.2; // Jarak minimum antar paku
+            
+            for (let i = 0; i < positions.length; i++) {
+                let isValid = true;
+                const pos = positions[i];
+                
+                // Periksa jarak dengan paku yang sudah valid
+                for (let j = 0; j < validPositions.length; j++) {
+                    const otherPos = validPositions[j];
+                    const dx = pos.x - otherPos.x;
+                    const dz = pos.z - otherPos.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+                    
+                    if (distance < minDistance) {
+                        isValid = false;
+                        break;
+                    }
+                }
+                
+                if (isValid) {
+                    validPositions.push(pos);
+                }
+            }
+            
+            // Hitung ukuran papan berdasarkan posisi paku
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+            
+            validPositions.forEach(pos => {
+                minX = Math.min(minX, pos.x);
+                maxX = Math.max(maxX, pos.x);
+                minZ = Math.min(minZ, pos.z);
+                maxZ = Math.max(maxZ, pos.z);
+            });
+            
+            // Tambahkan margin tepi
+            const edgeMargin = settings.edgeMargin;
+            minX -= edgeMargin;
+            maxX += edgeMargin;
+            minZ -= edgeMargin;
+            
+            // Tambahkan margin atas (khusus untuk Z positif)
+            maxZ += settings.topMargin > 0 ? settings.topMargin : edgeMargin;
+            
+            // Hitung ukuran papan baru
+            const boardWidth = maxX - minX;
+            const boardDepth = maxZ - minZ;
+            settings.boardSize = Math.max(boardWidth, boardDepth);
+            
+            // Perbarui tampilan ukuran papan
+            document.getElementById('boardSizeDisplay').textContent = settings.boardSize.toFixed(1) + ' cm';
+            
+            // Sesuaikan posisi paku agar berada di tengah papan
+            const centerX = (minX + maxX) / 2;
+            const centerZ = (minZ + maxZ) / 2;
+            
+            validPositions.forEach(pos => {
+                pos.x -= centerX;
+                pos.z -= centerZ;
+            });
+            
+            // Update tampilan jumlah paku aktual
+            document.getElementById('actualNailCount').textContent = validPositions.length;
+            
+            return validPositions;
+        }
+        
+        // Inisialisasi
+        function init() {
+            try {
+                // Scene
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0xf5f5f5);
+                
+                // Camera
+                camera = new THREE.PerspectiveCamera(
+                    60,
+                    window.innerWidth / window.innerHeight,
+                    0.1,
+                    1000
+                );
+                camera.position.set(0, 30, 50);
+                
+                // Renderer dengan pengaturan optimal
+                renderer = new THREE.WebGLRenderer({ 
+                    antialias: true, 
+                    preserveDrawingBuffer: true,
+                    powerPreference: 'high-performance'
+                });
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // Batasi pixel ratio untuk performa
+                renderer.physicallyCorrectLights = true;
+                
+                // Tambahkan renderer ke container
+                const container = document.getElementById('canvas-container');
+                container.appendChild(renderer.domElement);
+                
+                // Setup lighting
+                setupLighting();
+                
+                // Controls
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.enableDamping = true;
+                controls.dampingFactor = 0.05;
+                controls.screenSpacePanning = false;
+                controls.autoRotate = settings.autoRotate;
+                controls.autoRotateSpeed = 1.0;
+                
+                // Create board
+                createBoard();
+                
+                // Setup UI
+                setupUI();
+                
+                // Create pattern previews
+                createPatternPreviews();
+                
+                // Create color previews
+                createColorPreviews();
+                
+                // Create nails
+                createNails();
+                
+                // Event listeners
+                window.addEventListener('resize', onWindowResize);
+                
+                // Start FPS counter and memory monitor
+                updatePerformanceStats();
+                
+                // Animation loop
+                animate();
+                
+                // Sembunyikan loading screen setelah semuanya siap
+                setTimeout(() => {
+                    const loadingScreen = document.getElementById('loading-screen');
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => {
+                        loadingScreen.style.display = 'none';
+                    }, 500);
+                }, 500);
+                
+            } catch (error) {
+                console.error("Error initializing 3D scene:", error);
+                alert("Terjadi kesalahan saat memuat scene 3D. Silakan refresh halaman.");
+            }
+        }
+        
+        // Setup lighting
+        function setupLighting() {
+            // Clear existing lights
+            lights.forEach(light => {
+                scene.remove(light);
+            });
+            lights = [];
+            
+            // Ambient light
+            const ambientIntensity = settings.lightIntensity * settings.lightContrast;
+            const ambientLight = new THREE.AmbientLight(0xffffff, ambientIntensity);
+            scene.add(ambientLight);
+            lights.push(ambientLight);
+            
+            // Main directional light
+            const directionalIntensity = settings.lightIntensity * (1 - settings.lightContrast * 0.5);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, directionalIntensity);
+            directionalLight.position.set(1, 1, 1);
+            scene.add(directionalLight);
+            lights.push(directionalLight);
+            
+            // Back light untuk highlight
+            const backLight = new THREE.DirectionalLight(0xffffff, directionalIntensity * 0.5);
+            backLight.position.set(-1, 0.5, -1);
+            scene.add(backLight);
+            lights.push(backLight);
+            
+            // Side light untuk dimensi
+            const sideLight = new THREE.DirectionalLight(0xffffff, directionalIntensity * 0.3);
+            sideLight.position.set(1, 0.2, -0.5);
+            scene.add(sideLight);
+            lights.push(sideLight);
+        }
+        
+        // Create board
+        function createBoard() {
+            // Remove old board if exists
+            if (board) {
+                scene.remove(board);
+                board.geometry.dispose();
+                board.material.dispose();
+            }
+            
+            const geometry = new THREE.BoxGeometry(
+                settings.boardSize, 
+                settings.boardHeight, 
+                settings.boardSize
+            );
+            
+            const material = new THREE.MeshStandardMaterial({
+                color: settings.boardColor,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            
+            board = new THREE.Mesh(geometry, material);
+            board.position.y = -settings.boardHeight / 2;
+            scene.add(board);
+        }
+        
+        // Create nail geometry based on detail level
+        function createNailGeometry() {
+            let geometry;
+            
+            switch(settings.nailDetail) {
+                case 'low':
+                    // Simple box (most efficient)
+                    geometry = new THREE.BoxGeometry(
+                        settings.nailRadius * 2,
+                        1, // Will be scaled later
+                        settings.nailRadius * 2
+                    );
+                    break;
+                    
+                case 'high':
+                    // More detailed nail with head and tip
+                    const segments = 8;
+                    
+                    // Create shaft (cylinder)
+                    const shaftGeometry = new THREE.CylinderGeometry(
+                        settings.nailRadius, 
+                        settings.nailRadius, 
+                        1, // Will be scaled later
+                        segments
+                    );
+                    
+                    // Create tip (cone)
+                    const tipGeometry = new THREE.ConeGeometry(
+                        settings.nailRadius,
+                        settings.nailRadius * 2,
+                        segments
+                    );
+                    
+                    // Position tip at bottom of nail
+                    tipGeometry.translate(0, -0.5 - settings.nailRadius, 0);
+                    
+                    // Use simplified approach for better compatibility
+                    const combinedGeometry = new THREE.BufferGeometry();
+                    const positions = [];
+                    const normals = [];
+                    const uvs = [];
+                    
+                    // Helper to add vertices from a geometry
+                    function addGeometry(geometry) {
+                        const positionAttr = geometry.attributes.position;
+                        const normalAttr = geometry.attributes.normal;
+                        const uvAttr = geometry.attributes.uv;
+                        
+                        for (let i = 0; i < positionAttr.count; i++) {
+                            positions.push(
+                                positionAttr.getX(i),
+                                positionAttr.getY(i),
+                                positionAttr.getZ(i)
+                            );
+                            
+                            normals.push(
+                                normalAttr.getX(i),
+                                normalAttr.getY(i),
+                                normalAttr.getZ(i)
+                            );
+                            
+                            uvs.push(
+                                uvAttr.getX(i),
+                                uvAttr.getY(i)
+                            );
+                        }
+                    }
+                    
+                    // Add parts
+                    addGeometry(shaftGeometry);
+                    addGeometry(tipGeometry);
+                    
+                    // Set attributes
+                    combinedGeometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+                    combinedGeometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+                    combinedGeometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
+                    
+                    geometry = combinedGeometry;
+                    break;
+                    
+                case 'medium':
+                default:
+                    // Simple cylinder (good balance)
+                    geometry = new THREE.CylinderGeometry(
+                        settings.nailRadius,
+                        settings.nailRadius,
+                        1, // Will be scaled later
+                        6 // Reduced segments
+                    );
+                    break;
+            }
+            
+            return geometry;
+        }
+        
+        // Create nail head geometry based on detail level
+        function createNailHeadGeometry() {
+            let geometry;
+            const headRadius = settings.nailRadius * settings.headSizeRatio;
+            const headHeight = settings.nailRadius * 0.5;
+            
+            switch(settings.nailDetail) {
+                case 'low':
+                    // Simple box head (most efficient)
+                    geometry = new THREE.BoxGeometry(
+                        headRadius * 2,
+                        headHeight,
+                        headRadius * 2
+                    );
+                    break;
+                    
+                case 'high':
+                    // More detailed head (beveled cylinder)
+                    const segments = 8;
+                    
+                    // Create cylinder for head
+                    geometry = new THREE.CylinderGeometry(
+                        headRadius,
+                        headRadius * 0.9, // Slight taper
+                        headHeight,
+                        segments
+                    );
+                    break;
+                    
+                case 'medium':
+                default:
+                    // Simple cylinder head
+                    geometry = new THREE.CylinderGeometry(
+                        headRadius,
+                        headRadius,
+                        headHeight,
+                        6 // Reduced segments
+                    );
+                    break;
+            }
+            
+            return geometry;
+        }
+        
+        // Create nails using instancing without loading screen
+        function createNails() {
+            // Prevent multiple simultaneous generations
+            if (isGenerating) {
+                clearTimeout(generationTimeout);
+                cancelAnimationFrame(generationTimeout);
+            }
+            
+            isGenerating = true;
+            updateStatus('Menghasilkan paku nirmana...');
+            
+            // Remove old nails if exist
+            if (nailInstancedMesh) {
+                scene.remove(nailInstancedMesh);
+                nailInstancedMesh.geometry.dispose();
+                nailInstancedMesh.material.dispose();
+                nailInstancedMesh = null;
+            }
+            
+            if (nailHeadInstancedMesh) {
+                scene.remove(nailHeadInstancedMesh);
+                nailHeadInstancedMesh.geometry.dispose();
+                nailHeadInstancedMesh.material.dispose();
+                nailHeadInstancedMesh = null;
+            }
+            
+            // Force garbage collection if available
+            if (window.gc) {
+                window.gc();
+            }
+            
+            // Create nail geometry
+            const nailGeometry = createNailGeometry();
+            const nailHeadGeometry = createNailHeadGeometry();
+            
+            // Create materials with solid appearance
+            const nailMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff, // Warna akan diatur per instance
+                roughness: 0.3,
+                metalness: settings.metalness,
+                flatShading: false
+            });
+            
+            const nailHeadMaterial = new THREE.MeshStandardMaterial({
+                color: 0xffffff, // Warna akan diatur per instance
+                roughness: 0.2,
+                metalness: settings.metalness + 0.1,
+                flatShading: false
+            });
+            
+            // Hitung posisi paku berdasarkan distribusi
+            const nailPositions = calculateNailPositions();
+            const totalNails = nailPositions.length;
+            
+            // Perbarui ukuran papan berdasarkan posisi paku
+            createBoard();
+            
+            // Create instanced meshes
+            nailInstancedMesh = new THREE.InstancedMesh(
+                nailGeometry,
+                nailMaterial,
+                totalNails
+            );
+            
+            nailHeadInstancedMesh = new THREE.InstancedMesh(
+                nailHeadGeometry,
+                nailHeadMaterial,
+                totalNails
+            );
+            
+            // Add to scene immediately so user sees something
+            scene.add(nailInstancedMesh);
+            scene.add(nailHeadInstancedMesh);
+            
+            // Position each nail instance in batches for better performance
+            const nailMatrix = new THREE.Matrix4();
+            const headMatrix = new THREE.Matrix4();
+            const batchSize = 100; // Process in batches
+            
+            // Head offset (position head at top of nail)
+            const headHeight = settings.nailRadius * 0.5;
+            
+            // Color array untuk instanced mesh
+            const nailColors = [];
+            const headColors = [];
+            
+            // Pra-hitung semua warna dan nilai pola
+            const patternValues = [];
+            for (let i = 0; i < totalNails; i++) {
+                // Normalisasi posisi untuk pola
+                const pos = nailPositions[i];
+                const normalizedX = (pos.x + settings.boardSize / 2) / settings.boardSize * settings.nailGrid;
+                const normalizedZ = (pos.z + settings.boardSize / 2) / settings.boardSize * settings.nailGrid;
+                
+                // Calculate pattern value
+                const patternValue = patterns[settings.pattern](
+                    normalizedX, normalizedZ, settings.nailGrid, settings.patternScale, settings.patternIntensity
+                );
+                patternValues.push(patternValue);
+                
+                // Calculate color based on pattern value and position
+                const nailColor = colorUtils.getColorFromScheme(
+                    settings.baseColor, 
+                    patternValue, 
+                    i, 
+                    totalNails
+                );
+                
+                // Slightly darker color for head
+                const [r, g, b] = colorUtils.hexToRgb(nailColor);
+                const [h, s, l] = colorUtils.rgbToHsl(r, g, b);
+                const [hr, hg, hb] = colorUtils.hslToRgb(h, s, l * 0.9);
+                const headColor = colorUtils.rgbToHex(hr, hg, hb);
+                
+                nailColors.push(nailColor);
+                headColors.push(headColor);
+            }
+            
+            let index = 0;
+            let processedNails = 0;
+            
+            function processBatch() {
+                const startIndex = processedNails;
+                const endIndex = Math.min(processedNails + batchSize, totalNails);
+                
+                for (let i = startIndex; i < endIndex; i++) {
+                    const pos = nailPositions[i];
+                    
+                    // Get pre-calculated pattern value
+                    const patternValue = patternValues[i];
+                    
+                    // Map pattern value to height range
+                    const height = settings.minNailHeight + 
+                                  patternValue * (settings.maxNailHeight - settings.minNailHeight);
+                    
+                    // Set matrix for nail shaft
+                    nailMatrix.makeScale(1, height, 1);
+                    nailMatrix.setPosition(pos.x, height / 2, pos.z);
+                    
+                    // Apply to nail instance
+                    nailInstancedMesh.setMatrixAt(index, nailMatrix);
+                    nailInstancedMesh.setColorAt(index, new THREE.Color(nailColors[i]));
+                    
+                    // Set matrix for nail head
+                    headMatrix.makeScale(1, 1, 1);
+                    headMatrix.setPosition(pos.x, height + (headHeight / 2), pos.z);
+                    
+                    // Apply to head instance
+                    nailHeadInstancedMesh.setMatrixAt(index, headMatrix);
+                    nailHeadInstancedMesh.setColorAt(index, new THREE.Color(headColors[i]));
+                    
+                    index++;
+                }
+                
+                // Update instance matrices for visible changes
+                nailInstancedMesh.instanceMatrix.needsUpdate = true;
+                nailInstancedMesh.instanceColor.needsUpdate = true;
+                nailHeadInstancedMesh.instanceMatrix.needsUpdate = true;
+                nailHeadInstancedMesh.instanceColor.needsUpdate = true;
+                
+                processedNails = endIndex;
+                
+                // Update status
+                const progress = Math.round((processedNails / totalNails) * 100);
+                updateStatus(`Menghasilkan paku... ${progress}%`);
+                
+                // Continue processing or finish
+                if (processedNails < totalNails) {
+                    // Use requestAnimationFrame instead of setTimeout for better performance
+                    generationTimeout = requestAnimationFrame(processBatch);
+                } else {
+                    // Finish
+                    isGenerating = false;
+                    updateStatus(`Selesai (${totalNails} paku)`, true);
+                }
+            }
+            
+            // Start processing
+            processBatch();
+        }
+        
+        // Update status message
+        function updateStatus(message, autoHide = false) {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.style.opacity = '1';
+            
+            if (autoHide) {
+                setTimeout(() => {
+                    statusElement.style.opacity = '0';
+                }, 2000);
+            }
+        }
+        
+        // Create pattern previews
+        function createPatternPreviews() {
+            const previewContainer = document.getElementById('patternPreview');
+            previewContainer.innerHTML = '';
+            
+            // Create preview for each pattern
+            Object.keys(patterns).forEach(patternName => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'pattern-item';
+                previewItem.dataset.pattern = patternName;
+                previewItem.textContent = patternName.charAt(0).toUpperCase() + patternName.slice(1);
+                
+                // Set active class for current pattern
+                if (patternName === settings.pattern) {
+                    previewItem.classList.add('active');
+                }
+                
+                // Add click event
+                previewItem.addEventListener('click', () => {
+                    // Update settings
+                    settings.pattern = patternName;
+                    
+                    // Update select element
+                    document.getElementById('patternSelect').value = patternName;
+                    
+                    // Update active class
+                    document.querySelectorAll('.pattern-item').forEach(item => {
+                        item.classList.remove('active');
+                    });
+                    previewItem.classList.add('active');
+                    
+                    // Regenerate nails
+                    createNails();
+                });
+                
+                previewContainer.appendChild(previewItem);
+            });
+        }
+        
+        // Create color previews
+        function createColorPreviews() {
+            const previewContainer = document.getElementById('colorPreview');
+            previewContainer.innerHTML = '';
+            
+            // Get preview colors
+            const colors = colorUtils.getPreviewColors(settings.baseColor);
+            
+            // Create preview for each color
+            colors.forEach(color => {
+                const previewItem = document.createElement('div');
+                previewItem.className = 'color-item';
+                previewItem.style.backgroundColor = '#' + color.toString(16).padStart(6, '0');
+                previewContainer.appendChild(previewItem);
+            });
+        }
+        
+        // Update FPS counter and memory usage
+        function updatePerformanceStats() {
+            const now = performance.now();
+            
+            if (lastTime) {
+                const delta = now - lastTime;
+                frameCount++;
+                
+                if (delta >= 1000) {
+                    fps = Math.round((frameCount * 1000) / delta);
+                    document.getElementById('fpsCounter').textContent = fps;
+                    frameCount = 0;
+                    lastTime = now;
+                    
+                    // Estimate memory usage (rough approximation)
+                    let memoryUsage = 0;
+                    if (window.performance && window.performance.memory) {
+                        memoryUsage = Math.round(window.performance.memory.usedJSHeapSize / (1024 * 1024));
+                    } else {
+                        // Rough estimate based on nail count
+                        const totalNails = settings.nailGrid * settings.nailGrid;
+                        memoryUsage = Math.round((totalNails * 0.001 + 5) * 10) / 10;
+                    }
+                    document.getElementById('memoryUsage').textContent = memoryUsage;
+                }
+            } else {
+                lastTime = now;
+            }
+            
+            requestAnimationFrame(updatePerformanceStats);
+        }
+        
+        // Setup UI controls
+        function setupUI() {
+            // Nail count select
+            document.getElementById('nailCountSelect').value = settings.nailGrid;
+            document.getElementById('nailCountSelect').addEventListener('change', function() {
+                settings.nailGrid = parseInt(this.value);
+                // Update actual nail count display
+                const expectedCount = settings.nailGrid * settings.nailGrid;
+                document.getElementById('actualNailCount').textContent = expectedCount;
+                createNails();
+            });
+            
+            // Nail detail select
+            document.getElementById('nailDetailSelect').value = settings.nailDetail;
+            document.getElementById('nailDetailSelect').addEventListener('change', function() {
+                settings.nailDetail = this.value;
+                createNails();
+            });
+            
+            // Nail spacing controls
+            document.getElementById('nailSpacing').value = settings.nailSpacing;
+            document.getElementById('spacingValue').textContent = settings.nailSpacing.toFixed(1);
+            document.getElementById('nailSpacing').addEventListener('input', function() {
+                settings.nailSpacing = parseFloat(this.value);
+                document.getElementById('spacingValue').textContent = settings.nailSpacing.toFixed(1);
+            });
+            
+            document.getElementById('nailSpacing').addEventListener('change', function() {
+                createNails();
+            });
+            
+            // Spacing distribution
+            document.getElementById('spacingDistribution').value = settings.spacingDistribution;
+            document.getElementById('spacingDistribution').addEventListener('change', function() {
+                settings.spacingDistribution = this.value;
+                createNails();
+            });
+            
+            // Margin controls
+            document.getElementById('topMargin').value = settings.topMargin;
+            document.getElementById('topMarginValue').textContent = settings.topMargin.toFixed(1);
+            document.getElementById('topMargin').addEventListener('input', function() {
+                settings.topMargin = parseFloat(this.value);
+                document.getElementById('topMarginValue').textContent = settings.topMargin.toFixed(1);
+            });
+            
+            document.getElementById('topMargin').addEventListener('change', function() {
+                createNails();
+            });
+            
+            document.getElementById('edgeMargin').value = settings.edgeMargin;
+            document.getElementById('edgeMarginValue').textContent = settings.edgeMargin.toFixed(1);
+            document.getElementById('edgeMargin').addEventListener('input', function() {
+                settings.edgeMargin = parseFloat(this.value);
+                document.getElementById('edgeMarginValue').textContent = settings.edgeMargin.toFixed(1);
+            });
+            
+            document.getElementById('edgeMargin').addEventListener('change', function() {
+                createNails();
+            });
+            
+            // Pattern select
+            document.getElementById('patternSelect').addEventListener('change', function() {
+                settings.pattern = this.value;
+                
+                // Update active class in pattern preview
+                document.querySelectorAll('.pattern-item').forEach(item => {
+                    item.classList.remove('active');
+                    if (item.dataset.pattern === settings.pattern) {
+                        item.classList.add('active');
+                    }
+                });
+                
+                createNails();
+            });
+            
+            // Color scheme select
+            document.getElementById('colorSchemeSelect').addEventListener('change', function() {
+                settings.colorScheme = this.value;
+                createColorPreviews();
+                createNails();
+            });
+            
+            // Base color
+            document.getElementById('baseColor').value = '#' + settings.baseColor.toString(16).padStart(6, '0');
+            document.getElementById('baseColor').addEventListener('input', function() {
+                settings.baseColor = parseInt(this.value.substring(1), 16);
+                createColorPreviews();
+                createNails();
+            });
+            
+            // Color variation
+            document.getElementById('colorVariation').addEventListener('input', function() {
+                settings.colorVariation = parseFloat(this.value);
+                createColorPreviews();
+            });
+            
+            document.getElementById('colorVariation').addEventListener('change', function() {
+                createNails();
+            });
+            
+            // Brightness
+            document.getElementById('brightness').addEventListener('input', function() {
+                settings.brightness = parseFloat(this.value);
+                createColorPreviews();
+            });
+            
+            document.getElementById('brightness').addEventListener('change', function() {
+                createNails();
+            });
+            
+            // Metalness
+            document.getElementById('metalness').addEventListener('input', function() {
+                settings.metalness = parseFloat(this.value);
+                if (nailInstancedMesh) {
+                    nailInstancedMesh.material.metalness = settings.metalness;
+                }
+                if (nailHeadInstancedMesh) {
+                    nailHeadInstancedMesh.material.metalness = settings.metalness + 0.1;
+                }
+            });
+            
+            // Light intensity
+            document.getElementById('lightIntensity').addEventListener('input', function() {
+                settings.lightIntensity = parseFloat(this.value);
+                setupLighting();
+            });
+            
+            // Light contrast
+            document.getElementById('lightContrast').addEventListener('input', function() {
+                settings.lightContrast = parseFloat(this.value);
+                setupLighting();
+            });
+            
+            // Pattern intensity - use debounce for better performance
+            let intensityTimeout;
+            document.getElementById('patternIntensity').addEventListener('input', function() {
+                settings.patternIntensity = parseFloat(this.value);
+                
+                clearTimeout(intensityTimeout);
+                intensityTimeout = setTimeout(() => {
+                    createNails();
+                }, 300);
+            });
+            
+            // Pattern scale - use debounce for better performance
+            let scaleTimeout;
+            document.getElementById('patternScale').addEventListener('input', function() {
+                settings.patternScale = parseInt(this.value);
+                
+                clearTimeout(scaleTimeout);
+                scaleTimeout = setTimeout(() => {
+                    createNails();
+                }, 300);
+            });
+            
+            // Board color
+            document.getElementById('boardColor').addEventListener('input', function() {
+                settings.boardColor = parseInt(this.value.substring(1), 16);
+                if (board) {
+                    board.material.color.set(settings.boardColor);
+                }
+            });
+            
+            // Head size ratio
+            document.getElementById('headSizeRatio').addEventListener('input', function() {
+                settings.headSizeRatio = parseFloat(this.value);
+                document.getElementById('headSizeValue').textContent = settings.headSizeRatio.toFixed(1);
+            });
+            
+            document.getElementById('headSizeRatio').addEventListener('change', function() {
+                createNails();
+            });
+            
+            // Min height
+            document.getElementById('minHeight').addEventListener('input', function() {
+                settings.minNailHeight = parseFloat(this.value);
+                document.getElementById('minHeightValue').textContent = settings.minNailHeight.toFixed(1);
+                
+                // Ensure min is not greater than max
+                if (settings.minNailHeight > settings.maxNailHeight) {
+                    settings.maxNailHeight = settings.minNailHeight;
+                    document.getElementById('maxHeight').value = settings.maxNailHeight;
+                    document.getElementById('maxHeightValue').textContent = settings.maxNailHeight.toFixed(1);
+                }
+            });
+            
+            // Max height - use debounce for better performance
+            let heightTimeout;
+            document.getElementById('maxHeight').addEventListener('input', function() {
+                settings.maxNailHeight = parseFloat(this.value);
+                document.getElementById('maxHeightValue').textContent = settings.maxNailHeight.toFixed(1);
+                
+                // Ensure max is not less than min
+                if (settings.maxNailHeight < settings.minNailHeight) {
+                    settings.minNailHeight = settings.maxNailHeight;
+                    document.getElementById('minHeight').value = settings.minNailHeight;
+                    document.getElementById('minHeightValue').textContent = settings.minNailHeight.toFixed(1);
+                }
+                
+                clearTimeout(heightTimeout);
+                heightTimeout = setTimeout(() => {
+                    createNails();
+                }, 300);
+            });
+            
+            // Auto rotate
+            document.getElementById('autoRotate').addEventListener('change', function() {
+                settings.autoRotate = this.checked;
+                controls.autoRotate = settings.autoRotate;
+            });
+            
+            // Regenerate button
+            document.getElementById('regenerate').addEventListener('click', function() {
+                createNails();
+            });
+            
+            // Screenshot button
+            document.getElementById('screenshot').addEventListener('click', function() {
+                renderer.render(scene, camera);
+                const dataURL = renderer.domElement.toDataURL('image/png');
+                
+                const link = document.createElement('a');
+                link.href = dataURL;
+                link.download = 'nirmana-paku-3d.png';
+                link.click();
+            });
+            
+            // Initialize value displays
+            document.getElementById('minHeightValue').textContent = settings.minNailHeight.toFixed(1);
+            document.getElementById('maxHeightValue').textContent = settings.maxNailHeight.toFixed(1);
+            document.getElementById('headSizeValue').textContent = settings.headSizeRatio.toFixed(1);
+            document.getElementById('spacingValue').textContent = settings.nailSpacing.toFixed(1);
+            document.getElementById('topMarginValue').textContent = settings.topMargin.toFixed(1);
+            document.getElementById('edgeMarginValue').textContent = settings.edgeMargin.toFixed(1);
+            
+            // Initialize actual nail count display
+            const expectedCount = settings.nailGrid * settings.nailGrid;
+            document.getElementById('actualNailCount').textContent = expectedCount;
+            
+            // Initialize board size display
+            document.getElementById('boardSizeDisplay').textContent = settings.boardSize.toFixed(1) + ' cm';
+        }
+        
+        // Handle window resize
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        
+        // Start the application
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
