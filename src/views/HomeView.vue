@@ -14,19 +14,68 @@
             <h1 class="text-xl font-bold">Nirmana</h1>
           </div>
           
-          <!-- Theme Toggle -->
-          <button 
-            @click="toggleDarkMode()"
-            class="hover:cursor-pointer p-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
-            :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
-          >
-            <svg v-if="!isDark" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-            </svg>
-            <svg v-else class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-            </svg>
-          </button>
+          <!-- Auth Buttons & Theme Toggle -->
+          <div class="flex items-center space-x-3">
+            <!-- Auth Buttons -->
+            <div class="hidden sm:flex items-center space-x-3">
+              <router-link 
+                to="/login"
+                class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors duration-200"
+              >
+                Sign In
+              </router-link>
+              <router-link 
+                to="/register"
+                class="px-4 py-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg font-medium transition-all duration-200 transform hover:scale-105 shadow-sm hover:shadow-md"
+              >
+                Get Started
+              </router-link>
+            </div>
+            
+            <!-- Mobile Auth Menu -->
+            <div class="sm:hidden relative">
+              <button 
+                @click="showMobileMenu = !showMobileMenu"
+                class="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
+              >
+                <svg class="w-5 h-5 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
+              
+              <!-- Mobile Dropdown -->
+              <div v-if="showMobileMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2">
+                <router-link 
+                  to="/login"
+                  @click="showMobileMenu = false"
+                  class="block px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200"
+                >
+                  Sign In
+                </router-link>
+                <router-link 
+                  to="/register"
+                  @click="showMobileMenu = false"
+                  class="block px-4 py-2 text-indigo-600 dark:text-indigo-400 hover:bg-gray-100 dark:hover:bg-slate-700 font-medium transition-colors duration-200"
+                >
+                  Get Started
+                </router-link>
+              </div>
+            </div>
+            
+            <!-- Theme Toggle -->
+            <button 
+              @click="toggleDarkMode()"
+              class="hover:cursor-pointer p-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
+              :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+            >
+              <svg v-if="!isDark" class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+              <svg v-else class="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </button>
+          </div>
         </div>
       </div>
     </nav>
@@ -97,32 +146,55 @@
         </div>
         
         <!-- Action Buttons -->
-        <div class="flex flex-col sm:flex-row gap-6 justify-center items-center">
-          <router-link 
-            to="/2d"
-            class="group w-full sm:w-auto bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
-            </svg>
-            <span>Start 2D Simulation</span>
-            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </router-link>
+        <div class="flex flex-col space-y-6">
+          <!-- Primary CTA -->
+          <div class="text-center">
+            <router-link 
+              to="/register"
+              class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg"
+            >
+              <svg class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              Start Creating Now
+            </router-link>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Free to use • No credit card required
+            </p>
+          </div>
           
-          <router-link 
-            to="/3d"
-            class="group w-full sm:w-auto bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-8 py-4 rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
-          >
-            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
-            <span>3D Visualization</span>
-            <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-            </svg>
-          </router-link>
+          <!-- Secondary Actions -->
+          <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+            <router-link 
+              to="/2d"
+              class="group w-full sm:w-auto bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-gray-900 dark:text-white px-6 py-3 rounded-xl font-semibold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+              </svg>
+              <span>Try 2D Demo</span>
+            </router-link>
+            
+            <router-link 
+              to="/3d"
+              class="group w-full sm:w-auto bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-gray-900 dark:text-white px-6 py-3 rounded-xl font-semibold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
+            >
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+              </svg>
+              <span>Explore 3D</span>
+            </router-link>
+          </div>
+          
+          <!-- Existing User Link -->
+          <div class="text-center">
+            <p class="text-gray-600 dark:text-gray-400 text-sm">
+              Already have an account?
+              <router-link to="/login" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium ml-1">
+                Sign in here
+              </router-link>
+            </p>
+          </div>
         </div>
         
         <!-- Additional Info -->
@@ -146,6 +218,7 @@
 </template>
 
 <script setup>
+import { ref } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
 
 // Dark mode composable with explicit configuration
@@ -156,6 +229,9 @@ const isDark = useDark({
   valueLight: ''
 })
 const toggleDarkMode = useToggle(isDark)
+
+// Mobile menu state
+const showMobileMenu = ref(false)
 </script>
 
 <style scoped>
