@@ -1,6 +1,6 @@
 import { ref, reactive, computed, watch, nextTick } from 'vue'
 
-export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailWidthOptions) {
+export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailBodyOptions, selectedNailHead, nailHeadOptions) {
   // Viewport and interaction state
   const scale = ref(1)
   const xOffset = ref(0)
@@ -49,15 +49,46 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
   // Helper function to get color from width number
   const getColorFromWidth = (width) => {
     const widthType = getWidthTypeFromNumber(width)
-    const widthOption = nailWidthOptions.find(w => w.id === widthType)
-    return widthOption?.color || '#ef4444'
+    const widthOption = nailBodyOptions.find(w => w.id === widthType)
+    return widthOption?.color || '#ef4444' // Return the color from nail body options
   }
 
   // Helper function to get label from width number
   const getLabelFromWidth = (width) => {
     const widthType = getWidthTypeFromNumber(width)
-    const widthOption = nailWidthOptions.find(w => w.id === widthType)
-    return widthOption?.label || 'Thin (Red)'
+    const widthOption = nailBodyOptions.find(w => w.id === widthType)
+    return widthOption?.label || 'Thin Body'
+  }
+
+  // Helper function to convert head number to head type
+  const getHeadTypeFromNumber = (head) => {
+    switch (head) {
+      case 1: return 'small'
+      case 2: return 'medium'
+      case 3: return 'large'
+      default: return 'medium'
+    }
+  }
+
+  // Helper function to convert head type to number
+  const getHeadNumberFromType = (headType) => {
+    switch (headType) {
+      case 'small': return 1
+      case 'medium': return 2
+      case 'large': return 3
+      default: return 2
+    }
+  }
+
+  // Helper function to get head properties from head number
+  const getHeadPropertiesFromNumber = (head) => {
+    const headType = getHeadTypeFromNumber(head)
+    const headOption = nailHeadOptions.find(h => h.id === headType)
+    return {
+      color: headOption?.color || '#eab308',
+      borderPercentage: headOption?.borderPercentage || 60,
+      label: headOption?.label || 'Medium Head'
+    }
   }
 
   // Helper function to darken color for border
@@ -135,15 +166,26 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
         nailElement.dataset.y = row
         nailElement.dataset.position = `${col},${row}`
 
-        // Base nail slot styling
+        // Base nail slot styling - larger container for border space
         nailElement.style.cssText = `
-          width: 20px;
-          height: 20px;
-          border-radius: 50%;
-          background: #666666;
+          width: 23px;
+          height: 23px;
           cursor: pointer;
           transition: all 0.2s ease;
           position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        `
+
+        // Create inner dot for the nail body
+        const innerDot = document.createElement('div')
+        innerDot.className = 'nail-dot'
+        innerDot.style.cssText = `
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: #666666;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -152,7 +194,11 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           font-weight: bold;
           font-size: 10px;
           text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+          position: relative;
+          z-index: 2;
         `
+
+        nailElement.appendChild(innerDot)
 
         // Check if there's a nail at this position
         const nail = getNailAt(col, row)
@@ -164,14 +210,14 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
         nailElement.addEventListener('mouseenter', () => {
           if (!getNailAt(col, row)) {
             nailElement.style.transform = 'scale(1.1)'
-            nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3), 0 0 8px rgba(99, 102, 241, 0.4)'
+            // nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3), 0 0 8px rgba(99, 102, 241, 0.4)'
           }
         })
 
         nailElement.addEventListener('mouseleave', () => {
           if (!getNailAt(col, row)) {
             nailElement.style.transform = 'scale(1)'
-            nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'
+            // nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'
           }
         })
 
@@ -199,21 +245,24 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
     }
 
     const selectedWidthNumber = getWidthNumberFromType(selectedNailWidth.value)
+    const selectedHeadNumber = getHeadNumberFromType(selectedNailHead.value)
     const existingNail = getNailAt(x, y)
 
-    // Check if nail already exists with same height and width - if so, remove it (toggle)
+    // Check if nail already exists with same height, body_width, and head_width - if so, remove it (toggle)
     if (existingNail &&
       existingNail.height === selectedNailHeight.value &&
-      existingNail.width === selectedWidthNumber) {
+      existingNail.body_width === selectedWidthNumber &&
+      existingNail.head_width === selectedHeadNumber) {
       // Remove the nail (toggle off)
       removeNailAtPosition(x, y)
       return
     }
 
-    // Create new nail data with numeric width
+    // Create new nail data with numeric body_width and head_width
     const nailData = {
       height: selectedNailHeight.value,
-      width: selectedWidthNumber // Store as number instead of string
+      body_width: selectedWidthNumber, // Store as number instead of string
+      head_width: selectedHeadNumber // Store head width as number
     }
 
     // Set nail at position
@@ -224,32 +273,82 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
     if (nailElement) {
       updateNailVisual(nailElement, nailData)
     }
-  }
-
-  // Update nail visual appearance
+  }  // Update nail visual appearance
   const updateNailVisual = (nailElement, nail) => {
     if (!nailElement) return
 
-    if (nail && nail.height > 0) {
-      // Derive color and label from numeric width
-      const color = getColorFromWidth(nail.width)
-      const label = getLabelFromWidth(nail.width)
+    // Find the inner dot
+    const innerDot = nailElement.querySelector('.nail-dot')
 
-      // Show nail with height number and color
-      nailElement.style.backgroundColor = color
-      nailElement.style.color = '#ffffff'
-      nailElement.style.fontWeight = 'bold'
-      nailElement.style.fontSize = '10px'
-      nailElement.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'
-      nailElement.innerHTML = nail.height.toString()
-      nailElement.style.cursor = 'pointer'
-      nailElement.title = `Height: ${nail.height}, Width: ${label}\nClick with same settings to remove\nRight-click to remove`
+    if (nail && nail.height > 0) {
+      // Derive color and label from numeric body_width
+      const color = getColorFromWidth(nail.body_width)
+      const label = getLabelFromWidth(nail.body_width)
+
+      // Get head properties from numeric head_width (default to medium if not set)
+      const headWidth = nail.head_width || 2 // Default to medium
+      const headProperties = getHeadPropertiesFromNumber(headWidth)
+
+      // Update inner dot with height number and body color
+      if (innerDot) {
+        innerDot.style.backgroundColor = color
+        innerDot.style.color = '#ffffff'
+        innerDot.style.fontWeight = 'bold'
+        innerDot.style.fontSize = '10px'
+        innerDot.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'
+        innerDot.innerHTML = nail.height.toString()
+      }
+
+      // Remove any existing SVG
+      const existingSvg = nailElement.querySelector('svg')
+      if (existingSvg) {
+        existingSvg.remove()
+      }
+
+      // Add SVG arc based on head width percentage - outside the inner dot
+      const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+      svg.setAttribute('width', '23')
+      svg.setAttribute('height', '23')
+      svg.setAttribute('viewBox', '0 0 30 30')
+      svg.style.position = 'absolute'
+      svg.style.top = '0'
+      svg.style.left = '0'
+      svg.style.pointerEvents = 'none'
+      svg.style.zIndex = '1'
+
+      const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle')
+      circle.setAttribute('cx', '15')
+      circle.setAttribute('cy', '15')
+      circle.setAttribute('r', '13') // Larger radius to be outside the inner dot
+      circle.setAttribute('fill', 'none')
+      circle.setAttribute('stroke', headProperties.color)
+      circle.setAttribute('stroke-width', '2')
+      circle.setAttribute('stroke-linecap', 'round')
+
+      // Calculate stroke-dasharray for the percentage
+      const circumference = 2 * Math.PI * 13 // 2πr where r=13
+      const arcLength = (headProperties.borderPercentage / 100) * circumference
+      circle.setAttribute('stroke-dasharray', `${arcLength} ${circumference}`)
+      circle.setAttribute('transform', 'rotate(-90 15 15)') // Start from top
+
+      svg.appendChild(circle)
+      nailElement.appendChild(svg)
+
+      nailElement.title = `Height: ${nail.height}, Body Width: ${label}, Head Width: ${headProperties.label}\nClick with same settings to remove\nRight-click to remove`
     } else {
       // Reset to empty slot
-      nailElement.style.backgroundColor = '#666666'
-      nailElement.style.color = 'white'
-      nailElement.innerHTML = ''
+      if (innerDot) {
+        innerDot.style.backgroundColor = '#666666'
+        innerDot.style.color = 'white'
+        innerDot.innerHTML = ''
+      }
       nailElement.title = 'Click to add nail'
+
+      // Remove any existing SVG
+      const existingSvg = nailElement.querySelector('svg')
+      if (existingSvg) {
+        existingSvg.remove()
+      }
     }
   }
 
@@ -310,12 +409,13 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
       },
 
       // Nail Types (for reference)
-      nailTypes: nailWidthOptions.reduce((acc, option) => {
+      nailTypes: nailBodyOptions.reduce((acc, option) => {
         acc[option.id] = {
           id: option.id,
           label: option.label,
+          size: option.size,
           color: option.color,
-          width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
+          body_width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
         }
         return acc
       }, {}),
@@ -326,7 +426,8 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           positionKey,
           {
             height: nail.height,
-            width: nail.width // Now using numeric width
+            body_width: nail.body_width, // Now using numeric body_width
+            head_width: nail.head_width || 2 // Default to medium head if not set
           }
         ])
       ),
@@ -372,7 +473,8 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           positionKey,
           {
             height: nail.height,
-            width: nail.width
+            body_width: nail.body_width,
+            head_width: nail.head_width || 2
           }
         ])
       ),
@@ -410,11 +512,12 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           gridState.nails.forEach(nail => {
             if (nail.height > 0) {
               const key = `${nail.x},${nail.y}`
-              // Convert legacy widthType to numeric width
-              const width = nail.widthType ? getWidthNumberFromType(nail.widthType) : 1
+              // Convert legacy widthType to numeric body_width
+              const body_width = nail.widthType ? getWidthNumberFromType(nail.widthType) : 1
               nails.value[key] = {
                 height: nail.height,
-                width: width // Convert to numeric width
+                body_width: body_width, // Convert to numeric body_width
+                head_width: 2 // Default to medium head for legacy nails
               }
             }
           })
@@ -437,27 +540,30 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
 
             Object.entries(gridState.nails).forEach(([positionKey, nail]) => {
               // Handle both new simplified structure and legacy structure
-              let height, width
+              let height, body_width, head_width
 
               if (nail.properties) {
                 // Legacy structure with properties wrapper
                 height = nail.properties.height
-                width = nail.properties.width
+                body_width = nail.properties.width || nail.properties.body_width
+                head_width = nail.properties.head_width || 2 // Default to medium
               } else {
                 // New simplified structure
                 height = nail.height
-                width = nail.width
+                body_width = nail.width || nail.body_width // Support both old 'width' and new 'body_width'
+                head_width = nail.head_width || 2 // Default to medium
               }
 
-              // Handle both numeric width and legacy string width
-              if (typeof width === 'string') {
+              // Handle both numeric body_width and legacy string width
+              if (typeof body_width === 'string') {
                 // Convert legacy string width to numeric
-                width = getWidthNumberFromType(width)
+                body_width = getWidthNumberFromType(body_width)
               }
 
               nails.value[positionKey] = {
                 height: height,
-                width: width // Store as numeric width
+                body_width: body_width, // Store as numeric body_width
+                head_width: head_width // Store as numeric head_width
               }
             })
           }
@@ -497,12 +603,13 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           boardColor: boardSettings.boardColor
         }
       },
-      nailTypes: nailWidthOptions.reduce((acc, option) => {
+      nailTypes: nailBodyOptions.reduce((acc, option) => {
         acc[option.id] = {
           id: option.id,
           label: option.label,
+          size: option.size,
           color: option.color,
-          width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
+          body_width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
         }
         return acc
       }, {}),
@@ -511,7 +618,8 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
           positionKey,
           {
             height: nail.height,
-            width: nail.width // Using numeric width
+            body_width: nail.body_width, // Using numeric body_width
+            head_width: nail.head_width || 2 // Using numeric head_width
           }
         ])
       )
@@ -554,27 +662,30 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
 
             Object.entries(gridState.nails).forEach(([positionKey, nail]) => {
               // Handle both new simplified structure and legacy structure
-              let height, width
+              let height, body_width, head_width
 
               if (nail.properties) {
                 // Legacy structure with properties wrapper
                 height = nail.properties.height
-                width = nail.properties.width
+                body_width = nail.properties.width || nail.properties.body_width
+                head_width = nail.properties.head_width || 2 // Default to medium
               } else {
                 // New simplified structure
                 height = nail.height
-                width = nail.width
+                body_width = nail.width || nail.body_width // Support both old 'width' and new 'body_width'
+                head_width = nail.head_width || 2 // Default to medium
               }
 
-              // Handle both numeric width and legacy string width
-              if (typeof width === 'string') {
+              // Handle both numeric body_width and legacy string width
+              if (typeof body_width === 'string') {
                 // Convert legacy string width to numeric
-                width = getWidthNumberFromType(width)
+                body_width = getWidthNumberFromType(body_width)
               }
 
               nails.value[positionKey] = {
                 height: height,
-                width: width // Store as numeric width
+                body_width: body_width, // Store as numeric body_width
+                head_width: head_width // Store as numeric head_width
               }
             })
           }

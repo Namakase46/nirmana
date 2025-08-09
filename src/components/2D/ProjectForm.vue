@@ -244,27 +244,61 @@
         <div v-if="activeTab === 'nails'" class="space-y-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nail Width Type
+              Nail Body Width
             </label>
-            <div class="space-y-2">
+            <div class="flex gap-2">
               <button
-                v-for="widthOption in nailWidthOptions"
-                :key="widthOption.id"
-                @click="selectedNailWidth = widthOption.id"
+                v-for="bodyOption in nailBodyOptions"
+                :key="bodyOption.id"
+                @click="selectedNailWidth = bodyOption.id"
                 :class="[
-                  'w-full p-3 text-left rounded-md border transition-colors flex items-center gap-3',
-                  selectedNailWidth === widthOption.id
-                    ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
-                    : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-slate-600'
+                  'w-12 h-12 rounded-lg border-2 transition-all flex items-center justify-center font-bold text-white shadow-md',
+                  selectedNailWidth === bodyOption.id
+                    ? 'border-indigo-500 ring-2 ring-indigo-300 scale-110'
+                    : 'border-gray-300 dark:border-gray-600 hover:scale-105 hover:border-gray-400'
                 ]"
+                :style="{ backgroundColor: bodyOption.color }"
+                :title="bodyOption.label"
               >
-                <div
-                  class="w-6 h-6 rounded-full border-2 border-white shadow-sm"
-                  :style="{ backgroundColor: widthOption.color }"
-                ></div>
-                <span :class="selectedNailWidth === widthOption.id ? 'text-indigo-700 dark:text-indigo-300 font-medium' : 'text-gray-700 dark:text-gray-300'">
-                  {{ widthOption.label }}
-                </span>
+                {{ bodyOption.size }}
+              </button>
+            </div>
+          </div>
+          
+          <!-- Nail Head Width Section -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nail Head Width
+            </label>
+            <div class="flex gap-2">
+              <button
+                v-for="headOption in nailHeadOptions"
+                :key="headOption.id"
+                @click="selectedNailHead = headOption.id"
+                :class="[
+                  'w-12 h-12 rounded-lg border-2 transition-all flex items-center justify-center font-bold text-white shadow-md relative',
+                  selectedNailHead === headOption.id
+                    ? 'border-indigo-500 ring-2 ring-indigo-300 scale-110'
+                    : 'border-gray-300 dark:border-gray-600 hover:scale-105 hover:border-gray-400'
+                ]"
+                :style="{ backgroundColor: headOption.color }"
+                :title="headOption.label"
+              >
+                <!-- Inner circle with border percentage as arc -->
+                <svg class="absolute w-full h-full" viewBox="0 0 24 24">
+                  <circle
+                    cx="12"
+                    cy="12"
+                    r="8"
+                    fill="none"
+                    stroke="white"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    :stroke-dasharray="`${(headOption.borderPercentage / 100) * 50.27} 50.27`"
+                    transform="rotate(-90 12 12)"
+                  />
+                </svg>
+                <span class="relative z-10">{{ headOption.size }}</span>
               </button>
             </div>
           </div>
@@ -566,12 +600,19 @@ const boardSettings = reactive({
 const nailHeightOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const selectedNailHeight = ref(8)
 
-const nailWidthOptions = [
-  { id: 'thin', label: 'Thin (Red)', color: '#ef4444' },
-  { id: 'medium', label: 'Medium (Blue)', color: '#3b82f6' },
-  { id: 'thick', label: 'Thick (Green)', color: '#10b981' }
+const nailBodyOptions = [
+  { id: 'thin', label: 'Thin Body', size: 'S', color: '#ef4444' },
+  { id: 'medium', label: 'Medium Body', size: 'M', color: '#3b82f6' },
+  { id: 'thick', label: 'Thick Body', size: 'L', color: '#10b981' }
 ]
 const selectedNailWidth = ref('thick')
+
+const nailHeadOptions = [
+  { id: 'small', label: 'Small Head', size: 'S', color: '#8b5cf6', borderPercentage: 30 },
+  { id: 'medium', label: 'Medium Head', size: 'M', color: '#eab308', borderPercentage: 60 },
+  { id: 'large', label: 'Large Head', size: 'L', color: '#00ffff', borderPercentage: 100 }
+]
+const selectedNailHead = ref('medium')
 
 // Board color options
 const boardColorOptions = [
@@ -627,7 +668,7 @@ const {
   exportGrid,
   importGrid,
   initializeGrid
-} = use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailWidthOptions)
+} = use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailBodyOptions, selectedNailHead, nailHeadOptions)
 
 // File import handler
 const handleFileImport = async (event) => {
