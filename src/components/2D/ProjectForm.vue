@@ -71,9 +71,13 @@
     </div>
     
     <!-- Zoom Info & Reset View -->
-    <div class="fixed top-5 right-5 z-10 flex items-center gap-2">
+    <div class="fixed top-5 right-5 z-10 flex flex-col items-end gap-2">
       <div class="bg-white/80 dark:bg-slate-800/80 px-3 py-2 rounded-lg shadow-lg backdrop-blur text-sm">
         Zoom: {{ zoomPercentage }}%
+      </div>
+      <div class="bg-white/80 dark:bg-slate-800/80 px-3 py-2 rounded-lg shadow-lg backdrop-blur text-xs text-gray-600 dark:text-gray-300 max-w-48 text-right">
+        <div><kbd class="px-1 py-0.5 bg-gray-200 dark:bg-gray-600 rounded text-xs">Ctrl</kbd> + scroll to zoom</div>
+        <div>Drag background to pan</div>
       </div>
       <button 
         @click="resetView()"
@@ -99,13 +103,14 @@
     <div class="absolute inset-0 flex items-center justify-center p-20">
       <div 
         id="grid-container"
-        class="transition-transform duration-200 ease-out"
+        class="transition-transform duration-200 ease-out cursor-pointer select-none"
         style="transform-origin: center center;"
+        title="Click dots to place nails. Hold Ctrl/Cmd + scroll to zoom, drag background to pan"
       ></div>
     </div>
 
     <!-- Floating Control Panel -->
-    <div class="fixed bottom-5 left-5 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 max-h-[70vh] flex flex-col">
+    <div class="fixed bottom-5 left-5 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 max-h-[70vh] flex flex-col control-panel floating-panel">
       <!-- Panel Header -->
       <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Control Panel</h3>
@@ -418,40 +423,58 @@ const testo = () => {
 
 // Add zoom functionality
 const handleWheel = (event) => {
+  // Allow zooming anywhere on the screen when Ctrl/Cmd is held
   if (event.ctrlKey || event.metaKey) {
     event.preventDefault()
     const delta = event.deltaY
-    const zoomFactor = 0.1
+    const zoomFactor = 0.15
     
     if (delta < 0) {
       // Zoom in
-      scale.value = Math.min(scale.value + zoomFactor, 3)
+      scale.value = Math.min(scale.value + zoomFactor, 5)
     } else {
       // Zoom out
-      scale.value = Math.max(scale.value - zoomFactor, 0.2)
+      scale.value = Math.max(scale.value - zoomFactor, 0.1)
     }
     
     updateTransform()
   }
 }
 
-// Pan functionality
+// Pan functionality with grab cursor
 let isPanning = false
 let lastPanX = 0
 let lastPanY = 0
 
 const handleMouseDown = (event) => {
-  if (event.button === 1 || (event.button === 0 && event.altKey)) { // Middle mouse or Alt+left click
+  // Check if we're clicking on UI elements that should not trigger panning
+  const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+  
+  // Check if we're clicking on a nail dot
+  const isNailDot = event.target.closest('.nail-slot')
+  
+  // Pan with: 1) Middle mouse button anywhere, 2) Left click on background (not UI or nail dots), 3) Alt/Ctrl + left click anywhere
+  if (!isUIElement && (
+    event.button === 1 || // Middle mouse button
+    (event.button === 0 && !isNailDot) || // Left click on background (not on nail dots)
+    (event.button === 0 && (event.altKey || event.ctrlKey)) // Alt/Ctrl + left click (legacy support)
+  )) {
     event.preventDefault()
     isPanning = true
     lastPanX = event.clientX
     lastPanY = event.clientY
+    
+    // Set grabbing cursor on the entire document
     document.body.style.cursor = 'grabbing'
+    
+    // Prevent text selection during panning
+    document.body.style.userSelect = 'none'
   }
 }
 
 const handleMouseMove = (event) => {
   if (isPanning) {
+    event.preventDefault()
     const deltaX = event.clientX - lastPanX
     const deltaY = event.clientY - lastPanY
     
@@ -462,13 +485,64 @@ const handleMouseMove = (event) => {
     lastPanY = event.clientY
     
     updateTransform()
+  } else {
+    // Show appropriate cursor based on what's under the mouse
+    const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+    const isNailDot = event.target.closest('.nail-slot')
+    
+    if (isUIElement) {
+      // Over UI elements - let them handle their own cursor
+      return
+    } else if (isNailDot) {
+      // Over nail dots - show pointer for nail interaction
+      document.body.style.cursor = 'pointer'
+    } else if (event.altKey || event.ctrlKey) {
+      // Over background with modifier keys - show grab cursor
+      document.body.style.cursor = 'grab'
+    } else {
+      // Over background without modifiers - show grab cursor (since click+drag will pan)
+      document.body.style.cursor = 'grab'
+    }
   }
 }
 
-const handleMouseUp = () => {
+const handleMouseUp = (event) => {
   if (isPanning) {
     isPanning = false
+    
+    // Reset cursors
     document.body.style.cursor = 'default'
+    document.body.style.userSelect = 'auto'
+  }
+}
+
+// Add keyboard event handlers for better UX
+const handleKeyDown = (event) => {
+  // Update cursor when modifier keys are pressed (only if not over UI elements)
+  if (event.altKey || event.ctrlKey) {
+    const isOverUIElement = document.elementFromPoint(event.clientX || 0, event.clientY || 0)?.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+    
+    if (!isOverUIElement && !isPanning) {
+      document.body.style.cursor = 'grab'
+    }
+  }
+}
+
+const handleKeyUp = (event) => {
+  // Update cursor when modifier keys are released
+  if (!event.altKey && !event.ctrlKey && !isPanning) {
+    const isOverUIElement = document.elementFromPoint(event.clientX || 0, event.clientY || 0)?.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+    const isOverNailDot = document.elementFromPoint(event.clientX || 0, event.clientY || 0)?.closest('.nail-slot')
+    
+    if (isOverUIElement) {
+      // Over UI - let it handle cursor
+      return
+    } else if (isOverNailDot) {
+      document.body.style.cursor = 'pointer'
+    } else {
+      // Over background - show grab cursor (since click+drag will pan)
+      document.body.style.cursor = 'grab'
+    }
   }
 }
 
@@ -610,6 +684,8 @@ onMounted(() => {
   window.addEventListener('mousedown', handleMouseDown)
   window.addEventListener('mousemove', handleMouseMove)
   window.addEventListener('mouseup', handleMouseUp)
+  window.addEventListener('keydown', handleKeyDown)
+  window.addEventListener('keyup', handleKeyUp)
 })
 
 // Cleanup event listeners
@@ -618,6 +694,8 @@ onUnmounted(() => {
   window.removeEventListener('mousedown', handleMouseDown)
   window.removeEventListener('mousemove', handleMouseMove)
   window.removeEventListener('mouseup', handleMouseUp)
+  window.removeEventListener('keydown', handleKeyDown)
+  window.removeEventListener('keyup', handleKeyUp)
 })
 
 // Expose methods for parent components
