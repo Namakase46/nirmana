@@ -1,19 +1,29 @@
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted, markRaw, shallowRef } from 'vue'
 import * as THREE from 'three'
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
 export function use3DScene(canvasContainer) {
-  // State
-  const scene = ref(null)
-  const camera = ref(null)
-  const renderer = ref(null)
-  const controls = ref(null)
+  // State - use shallowRef for Three.js objects to prevent deep reactivity
+  const scene = shallowRef(null)
+  const camera = shallowRef(null)
+  const renderer = shallowRef(null)
+  const controls = shallowRef(null)
   const isLoading = ref(true)
   const fps = ref(0)
   const memoryUsage = ref(0)
+  const isSceneReady = ref(false)
+
+  // Promise that resolves when scene is initialized
+  let sceneReadyResolve
+  const sceneReadyPromise = new Promise(resolve => {
+    sceneReadyResolve = resolve
+  })
 
   const settings = ref({
     boardColor: 0xa4846a,
-    boardSize: 42,
+    boardSize: 42, // Kept for backward compatibility
+    boardWidth: 42,
+    boardDepth: 42,
     boardHeight: 2,
     baseColor: 0xffffff,
     colorScheme: 'custom',
@@ -134,6 +144,7 @@ export function use3DScene(canvasContainer) {
 
   let frameCount = 0
   let lastTime = 0
+  // Use regular variables for Three.js objects that don't need reactivity
   let board, nailInstancedMesh, nailHeadInstancedMesh
   let lights = []
 
@@ -141,45 +152,53 @@ export function use3DScene(canvasContainer) {
   const initScene = () => {
     if (!canvasContainer.value) return
 
-    // Create scene
-    scene.value = new THREE.Scene()
-    scene.value.background = new THREE.Color(0xf0f0f0)
+    try {
+      // Create scene - mark as raw to prevent Vue reactivity
+      scene.value = markRaw(new THREE.Scene())
+      scene.value.background = new THREE.Color(0xf0f0f0)
 
-    // Create camera
-    camera.value = new THREE.PerspectiveCamera(
-      75,
-      canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
-      0.1,
-      1000
-    )
-    camera.value.position.set(30, 30, 30)
+      // Create camera - mark as raw to prevent Vue reactivity
+      camera.value = markRaw(new THREE.PerspectiveCamera(
+        30,
+        canvasContainer.value.clientWidth / canvasContainer.value.clientHeight,
+        0.1,
+        1000
+      ))
+      camera.value.position.set(30, 30, 30)
 
-    // Create renderer
-    renderer.value = new THREE.WebGLRenderer({ antialias: true })
-    renderer.value.setSize(
-      canvasContainer.value.clientWidth,
-      canvasContainer.value.clientHeight
-    )
-    renderer.value.shadowMap.enabled = true
-    renderer.value.shadowMap.type = THREE.PCFSoftShadowMap
+      // Create renderer - mark as raw to prevent Vue reactivity
+      renderer.value = markRaw(new THREE.WebGLRenderer({ antialias: true }))
+      renderer.value.setSize(
+        canvasContainer.value.clientWidth,
+        canvasContainer.value.clientHeight
+      )
+      renderer.value.shadowMap.enabled = true
+      renderer.value.shadowMap.type = THREE.PCFSoftShadowMap
 
-    canvasContainer.value.appendChild(renderer.value.domElement)
+      canvasContainer.value.appendChild(renderer.value.domElement)
 
-    // Add OrbitControls if available
-    if (window.THREE && window.THREE.OrbitControls) {
-      controls.value = new window.THREE.OrbitControls(camera.value, renderer.value.domElement)
+      // Add OrbitControls - mark as raw to prevent Vue reactivity
+      controls.value = markRaw(new OrbitControls(camera.value, renderer.value.domElement))
       controls.value.enableDamping = true
       controls.value.autoRotate = settings.value.autoRotate
+
+      setupLighting()
+      createBoard()
+      createNails()
+
+      isLoading.value = false
+      isSceneReady.value = true
+      sceneReadyResolve()
+    } catch (error) {
+      console.error('Failed to initialize 3D scene:', error)
+      isLoading.value = false
+      throw error
     }
-
-    setupLighting()
-    createBoard()
-    createNails()
-
-    isLoading.value = false
   }
 
   const setupLighting = () => {
+    if (!scene.value) return
+
     // Clear existing lights
     lights.forEach(light => scene.value.remove(light))
     lights = []
@@ -200,17 +219,27 @@ export function use3DScene(canvasContainer) {
   }
 
   const createBoard = () => {
+    if (!scene.value) return
+
     if (board) {
       scene.value.remove(board)
     }
 
+    // Use separate width and depth values, fallback to boardSize for backward compatibility
+    const boardWidth = settings.value.boardWidth || settings.value.boardSize
+    const boardDepth = settings.value.boardDepth || settings.value.boardSize
+
     const geometry = new THREE.BoxGeometry(
-      settings.value.boardSize,
+      boardWidth,
       settings.value.boardHeight,
-      settings.value.boardSize
+      boardDepth
     )
-    const material = new THREE.MeshLambertMaterial({ color: settings.value.boardColor })
-    board = new THREE.Mesh(geometry, material)
+    const material = new THREE.MeshStandardMaterial({
+      color: settings.value.boardColor,
+      roughness: 0.8,
+      metalness: 0.1
+    })
+    board = markRaw(new THREE.Mesh(geometry, material))
     board.position.y = -settings.value.boardHeight / 2
     board.receiveShadow = true
     scene.value.add(board)
@@ -223,12 +252,12 @@ export function use3DScene(canvasContainer) {
     if (detail === 'low') segments = 6
     else if (detail === 'high') segments = 16
 
-    return new THREE.CylinderGeometry(
+    return markRaw(new THREE.CylinderGeometry(
       settings.value.nailRadius,
       settings.value.nailRadius,
       1, // Height will be scaled per instance
       segments
-    )
+    ))
   }
 
   const createNailHeadGeometry = () => {
@@ -238,15 +267,17 @@ export function use3DScene(canvasContainer) {
     if (detail === 'low') segments = 6
     else if (detail === 'high') segments = 16
 
-    return new THREE.CylinderGeometry(
+    return markRaw(new THREE.CylinderGeometry(
       settings.value.nailRadius * settings.value.headSizeRatio,
       settings.value.nailRadius * settings.value.headSizeRatio,
       0.2,
       segments
-    )
+    ))
   }
 
   const createNails = () => {
+    if (!scene.value) return
+
     // Remove existing nails
     if (nailInstancedMesh) {
       scene.value.remove(nailInstancedMesh)
@@ -259,33 +290,123 @@ export function use3DScene(canvasContainer) {
       nailHeadInstancedMesh.material.dispose()
     }
 
+    // Check if we have custom nail data
+    if (settings.value.customNailData && settings.value.customNailData.nails) {
+      createCustomNails()
+    } else {
+      createPatternNails()
+    }
+  }
+
+  const createCustomNails = () => {
+    const customData = settings.value.customNailData
+    const nailsData = customData.nails
+    const gridWidth = customData.gridWidth
+    const gridHeight = customData.gridHeight
+    const marginBetweenNails = customData.marginBetweenNails / 10 // Convert mm to cm
+    const paddingBoard = customData.paddingBoard / 10 // Convert mm to cm
+
+    // Get nail positions from the data
+    const nailPositions = Object.keys(nailsData)
+    const instanceCount = nailPositions.length
+
+    if (instanceCount === 0) return
+
+    // Create nail geometries - mark as raw to prevent reactivity issues
+    const nailGeometry = markRaw(createNailGeometry())
+    const nailMaterial = markRaw(new THREE.MeshStandardMaterial({
+      color: 0x888888,
+      metalness: settings.value.metalness,
+      roughness: 0.4
+    }))
+
+    const headGeometry = markRaw(createNailHeadGeometry())
+    const headMaterial = markRaw(new THREE.MeshStandardMaterial({
+      color: 0x666666,
+      metalness: settings.value.metalness,
+      roughness: 0.3
+    }))
+
+    nailInstancedMesh = markRaw(new THREE.InstancedMesh(nailGeometry, nailMaterial, instanceCount))
+    nailInstancedMesh.castShadow = true
+
+    nailHeadInstancedMesh = markRaw(new THREE.InstancedMesh(headGeometry, headMaterial, instanceCount))
+    nailHeadInstancedMesh.castShadow = true
+
+    // Generate nail positions and heights - mark matrices as raw
+    const matrix = markRaw(new THREE.Matrix4())
+    const headMatrix = markRaw(new THREE.Matrix4())
+
+    let index = 0
+    nailPositions.forEach(position => {
+      const [x, y] = position.split(',').map(Number)
+      const nailData = nailsData[position]
+
+      // Calculate actual position on the board
+      const posX = (x - (gridWidth - 1) / 2) * marginBetweenNails
+      const posZ = (y - (gridHeight - 1) / 2) * marginBetweenNails
+
+      // Get nail height (convert mm to cm)
+      const nailHeight = (nailData.height || 10) / 10
+
+      // Get nail dimensions - these are likely thickness multipliers, not absolute measurements
+      const bodyWidthMultiplier = nailData.body_width || 1
+      const headWidthMultiplier = nailData.head_width || 1
+
+      // Calculate actual dimensions based on default nail radius and multipliers
+      const bodyWidth = settings.value.nailRadius * bodyWidthMultiplier
+      const headWidth = settings.value.nailRadius * settings.value.headSizeRatio * headWidthMultiplier
+
+      // Set nail shaft transform
+      matrix.makeScale(bodyWidth, nailHeight, bodyWidth)
+      matrix.setPosition(posX, nailHeight / 2, posZ)
+      nailInstancedMesh.setMatrixAt(index, matrix)
+
+      // Set nail head transform
+      headMatrix.makeScale(headWidth, 0.2, headWidth)
+      headMatrix.setPosition(posX, nailHeight + 0.1, posZ)
+      nailHeadInstancedMesh.setMatrixAt(index, headMatrix)
+
+      index++
+    })
+
+    nailInstancedMesh.instanceMatrix.needsUpdate = true
+    nailHeadInstancedMesh.instanceMatrix.needsUpdate = true
+
+    scene.value.add(nailInstancedMesh)
+    scene.value.add(nailHeadInstancedMesh)
+  }
+
+  const createPatternNails = () => {
     const gridSize = settings.value.nailGrid
     const spacing = settings.value.nailSpacing
     const instanceCount = gridSize * gridSize
 
-    // Create nail shafts
-    const nailGeometry = createNailGeometry()
-    const nailMaterial = new THREE.MeshLambertMaterial({
+    // Create nail shafts - mark as raw to prevent reactivity issues
+    const nailGeometry = markRaw(createNailGeometry())
+    const nailMaterial = markRaw(new THREE.MeshStandardMaterial({
       color: 0x888888,
-      metalness: settings.value.metalness
-    })
+      metalness: settings.value.metalness,
+      roughness: 0.4
+    }))
 
-    nailInstancedMesh = new THREE.InstancedMesh(nailGeometry, nailMaterial, instanceCount)
+    nailInstancedMesh = markRaw(new THREE.InstancedMesh(nailGeometry, nailMaterial, instanceCount))
     nailInstancedMesh.castShadow = true
 
-    // Create nail heads
-    const headGeometry = createNailHeadGeometry()
-    const headMaterial = new THREE.MeshLambertMaterial({
+    // Create nail heads - mark as raw to prevent reactivity issues
+    const headGeometry = markRaw(createNailHeadGeometry())
+    const headMaterial = markRaw(new THREE.MeshStandardMaterial({
       color: 0x666666,
-      metalness: settings.value.metalness
-    })
+      metalness: settings.value.metalness,
+      roughness: 0.3
+    }))
 
-    nailHeadInstancedMesh = new THREE.InstancedMesh(headGeometry, headMaterial, instanceCount)
+    nailHeadInstancedMesh = markRaw(new THREE.InstancedMesh(headGeometry, headMaterial, instanceCount))
     nailHeadInstancedMesh.castShadow = true
 
-    // Generate nail positions and heights
-    const matrix = new THREE.Matrix4()
-    const headMatrix = new THREE.Matrix4()
+    // Generate nail positions and heights - mark matrices as raw
+    const matrix = markRaw(new THREE.Matrix4())
+    const headMatrix = markRaw(new THREE.Matrix4())
     const colors = colorUtils.generateColorScheme(
       settings.value.baseColor,
       settings.value.colorScheme,
@@ -381,13 +502,16 @@ export function use3DScene(canvasContainer) {
   }
 
   const updateSettings = (newSettings) => {
+    if (!scene.value) return
+
     Object.assign(settings.value, newSettings)
 
     if (newSettings.lightIntensity !== undefined) {
       setupLighting()
     }
 
-    if (newSettings.boardColor !== undefined || newSettings.boardSize !== undefined) {
+    if (newSettings.boardColor !== undefined || newSettings.boardSize !== undefined ||
+      newSettings.boardWidth !== undefined || newSettings.boardDepth !== undefined) {
       createBoard()
     }
 
@@ -395,7 +519,8 @@ export function use3DScene(canvasContainer) {
     const nailSettings = [
       'nailGrid', 'pattern', 'patternIntensity', 'patternScale',
       'minNailHeight', 'maxNailHeight', 'nailRadius', 'headSizeRatio',
-      'colorScheme', 'baseColor', 'nailDetail', 'metalness', 'nailSpacing'
+      'colorScheme', 'baseColor', 'nailDetail', 'metalness', 'nailSpacing',
+      'customNailData'
     ]
 
     if (nailSettings.some(key => newSettings[key] !== undefined)) {
@@ -409,14 +534,14 @@ export function use3DScene(canvasContainer) {
 
   // Lifecycle
   onMounted(() => {
-    // Load OrbitControls
-    const script = document.createElement('script')
-    script.src = 'https://cdn.jsdelivr.net/npm/three@0.178.0/examples/js/controls/OrbitControls.js'
-    script.onload = () => {
+    try {
       initScene()
       animate()
+    } catch (error) {
+      console.error('Failed to initialize scene:', error)
+      isLoading.value = false
+      sceneReadyResolve()
     }
-    document.head.appendChild(script)
 
     window.addEventListener('resize', onWindowResize)
   })
@@ -434,10 +559,12 @@ export function use3DScene(canvasContainer) {
     renderer,
     controls,
     isLoading,
+    isSceneReady,
     settings,
     fps,
     memoryUsage,
     patterns: Object.keys(patterns),
+    sceneReadyPromise,
     initScene,
     createNails,
     updateSettings,

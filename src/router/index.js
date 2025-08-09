@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import NewProject2D from '../views/2D/NewProjectView.vue'
 import EditProject2D from '../views/2D/EditProjectView.vue'
-import NewProject3D from '../views/View3D.vue'
+import EditProject3D from '../views/3D/EditProjectView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import VerifyEmailView from '../views/VerifyEmailView.vue'
@@ -29,10 +29,16 @@ const router = createRouter({
       component: EditProject2D,
       props: true,
     },
+    // {
+    //   path: '/3d',
+    //   name: '3d',
+    //   component: NewProject3D,
+    // },
     {
-      path: '/3d',
-      name: '3d',
-      component: NewProject3D,
+      path: '/3d/edit/:id',
+      name: '3d-edit',
+      component: EditProject3D,
+      props: true,
     },
     {
       path: '/login',
