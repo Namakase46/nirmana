@@ -563,7 +563,7 @@ const boardSettings = reactive({
 })
 
 // Nail options
-const nailHeightOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+const nailHeightOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 const selectedNailHeight = ref(8)
 
 const nailWidthOptions = [
