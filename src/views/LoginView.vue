@@ -235,7 +235,10 @@ const errorMessage = ref('')
 // Cookie utility functions
 const setCookie = (name, value, expirationDate) => {
   const expires = expirationDate ? `expires=${new Date(expirationDate).toUTCString()};` : ''
-  document.cookie = `${name}=${value}; ${expires} path=/; Secure; SameSite=Strict`
+  const isSecure = window.location.protocol === 'https:'
+  const secureFlag = isSecure ? 'Secure;' : ''
+  const sameSiteFlag = isSecure ? 'SameSite=Strict' : 'SameSite=Lax'
+  document.cookie = `${name}=${value}; ${expires} path=/; ${secureFlag} ${sameSiteFlag}`
 }
 
 // Handle login
