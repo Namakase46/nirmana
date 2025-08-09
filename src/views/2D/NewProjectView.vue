@@ -77,15 +77,6 @@ const handleSaveProject = async () => {
 
     // Access the nails ref correctly - nails is already the reactive object
     const nailsRef = projectFormRef.value.nails || {}
-    const nailsData = Object.fromEntries(
-      Object.entries(nailsRef).map(([positionKey, nail]) => [
-        positionKey,
-        {
-          height: nail.height,
-          width: nail.width
-        }
-      ])
-    )
 
     // Create new project (POST request)
     const projectData = {

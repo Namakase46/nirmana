@@ -130,38 +130,8 @@ const loadProject = async () => {
 
     // Load nails data
     if (data.project.nails) {
-      const nailsData = {}
-      
-      Object.entries(data.project.nails).forEach(([positionKey, nail]) => {
-        // Handle both new simplified structure and legacy structure
-        let height, width
-        
-        if (nail.properties) {
-          // Legacy structure with properties wrapper
-          height = nail.properties.height
-          width = nail.properties.width
-        } else {
-          // New simplified structure
-          height = nail.height
-          width = nail.width
-        }
-        
-        // Convert string width to numeric if needed
-        if (typeof width === 'string') {
-          width = getWidthNumberFromType(width)
-        }
-
-        nailsData[positionKey] = {
-          height: height,
-          width: width
-        }
-      })
-
       // Set nails data
-      console.log('🔍 Debug setting nails data:', nailsData)
-      console.log('🔍 Debug projectFormRef.value.nails before assignment:', projectFormRef.value.nails)
-      projectFormRef.value.nails.value = nailsData
-      console.log('🔍 Debug projectFormRef.value.nails after assignment:', projectFormRef.value.nails.value)
+      projectFormRef.value.nails = data.project.nails
     }
 
     // Regenerate grid with loaded data
@@ -196,11 +166,6 @@ const handleSaveProject = async () => {
     return
   }
 
-  console.log('🔍 Debug handleSaveProject - Start')
-  console.log('projectFormRef.value:', projectFormRef.value)
-  console.log('projectFormRef.value.nails:', projectFormRef.value.nails)
-  console.log('projectFormRef.value.nails.value:', projectFormRef.value.nails?.value)
-
   isSaving.value = true
   
   try {
@@ -224,34 +189,15 @@ const handleSaveProject = async () => {
       boardColor: projectFormRef.value.boardSettings.boardColor
     }
 
-    // Get current nails data - using simplified structure
-    // Ensure nails.value exists and provide fallback
-    const nailsRef = projectFormRef.value.nails?.value || {}
-    const nailsData = Object.fromEntries(
-      Object.entries(nailsRef).map(([positionKey, nail]) => [
-        positionKey,
-        {
-          height: nail.height,
-          width: nail.width
-        }
-      ])
-    )
+    // Access the nails ref correctly - nails is already the reactive object
+    const nailsRef = projectFormRef.value.nails || {}
 
-    console.log('Updating project with nails data:', nailsData, 'Total nails:', Object.keys(nailsData).length)
-    console.log('Debug - projectFormRef.value:', projectFormRef.value)
-    console.log('Debug - projectFormRef.value.nails:', projectFormRef.value.nails)
-    console.log('Debug - projectFormRef.value.nails.value:', projectFormRef.value.nails?.value)
-
-    // Update project (PUT request)
+    // Create new project (PUT request), without key "project", not like POST
     const projectData = {
-      project: {
-        name: projectFormRef.value.projectName.trim(),
-        board_config: boardConfig,
-        nails: nailsData
-      }
+      name: projectFormRef.value.projectName.trim(),
+      board_config: boardConfig,
+      nails: nailsRef
     }
-
-    console.log('Sending update request to:', `${backendUrl}/api/v1/projects/${projectId.value}`)
 
     const response = await fetch(`${backendUrl}/api/v1/projects/${projectId.value}`, {
       method: 'PUT',
@@ -274,11 +220,6 @@ const handleSaveProject = async () => {
 
     const result = await response.json()
     console.log('Project updated successfully:', result)
-
-    // Update project info with the response
-    if (result.project) {
-      projectInfo.value = result.project
-    }
 
     success(`Project "${projectFormRef.value.projectName}" updated successfully!`)
 
