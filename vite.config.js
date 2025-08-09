@@ -24,7 +24,7 @@ export default defineConfig({
       usePolling: true,
     },
     allowedHosts: [
-      '440815416b99.ngrok-free.app',
+      // 'xxx.ngrok-free.app',
     ]
   }
 })
