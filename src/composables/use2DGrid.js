@@ -389,91 +389,6 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
       updated_at: null  // Will be set by database DEFAULT CURRENT_TIMESTAMP
     }
 
-    console.log('🚀 BACKEND OPTIMIZED STRUCTURE (Normalized Columns):')
-    console.log('='.repeat(60))
-    console.log(JSON.stringify(backendOptimized, null, 2))
-
-    // Console log database table suggestions (normalized JSONB columns)
-    console.log('📊 OPTIMIZED DATABASE SCHEMA (Normalized JSONB columns):')
-    console.log('='.repeat(60))
-    console.log(`
-    -- Table: projects (normalized with separate JSONB columns)
-    CREATE TABLE projects (
-      id SERIAL PRIMARY KEY,
-      user_id INTEGER NOT NULL,
-      project_name VARCHAR(255) NOT NULL,
-
-      -- Separate JSONB columns for better organization
-      board_config JSONB NOT NULL,  -- dimensions, appearance, etc.
-      nails JSONB NOT NULL,         -- position-based nail data {"x,y": {...}}
-
-      -- Metadata
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-    
-    -- Indexes for performance and queries
-    CREATE INDEX idx_projects_user_id ON projects(user_id);
-    CREATE INDEX idx_projects_nails_gin ON projects USING GIN (nails);
-    CREATE INDEX idx_projects_board_config_gin ON projects USING GIN (board_config);
-    
-    -- Expression indexes for commonly queried computed values
-    CREATE INDEX idx_projects_nail_count ON projects(jsonb_object_length(nails));
-    CREATE INDEX idx_projects_board_dimensions ON projects(
-      (board_config->'dimensions'->>'dotsCountHorizontal')::integer,
-      (board_config->'dimensions'->>'dotsCountVertical')::integer
-    );
-    
-    -- Example queries with the new schema:
-    -- Get all projects for a user: 
-    SELECT * FROM projects WHERE user_id = $1;
-    
-    -- Get projects with more than 10 nails:
-    SELECT * FROM projects WHERE jsonb_object_length(nails) > 10;
-    
-    -- Get nail at specific position:
-    SELECT nails->'5,3' FROM projects WHERE id = $1;
-    
-    -- Get all nail positions and heights:
-    SELECT jsonb_object_keys(nails) as position, 
-           nails->jsonb_object_keys(nails)->>'height' as height,
-           nails->jsonb_object_keys(nails)->>'width' as width
-    FROM projects WHERE id = $1;
-    
-    -- Get board utilization percentage:
-    SELECT 
-      jsonb_object_length(nails) as total_nails,
-      (board_config->'dimensions'->>'dotsCountHorizontal')::integer * 
-      (board_config->'dimensions'->>'dotsCountVertical')::integer as total_slots,
-      ROUND(
-        (jsonb_object_length(nails)::float / 
-         ((board_config->'dimensions'->>'dotsCountHorizontal')::integer * 
-          (board_config->'dimensions'->>'dotsCountVertical')::integer)) * 100, 2
-      ) as utilization_percentage
-    FROM projects WHERE id = $1;
-    
-    -- Find projects by board size:
-    SELECT * FROM projects 
-    WHERE board_config->'dimensions'->>'dotsCountHorizontal' = '10'
-      AND board_config->'dimensions'->>'dotsCountVertical' = '8';
-    
-    -- Get all nail types used in a project:
-    SELECT DISTINCT nails->key->>'width' as nail_width
-    FROM projects, jsonb_object_keys(nails) as key
-    WHERE id = $1;
-    `)
-
-    // Console log API endpoint suggestions
-    console.log('🌐 SUGGESTED API ENDPOINTS:')
-    console.log('='.repeat(60))
-    console.log(`
-    POST   /api/projects          - Create new project
-    GET    /api/projects          - Get user's projects
-    GET    /api/projects/:id      - Get specific project
-    PUT    /api/projects/:id      - Update project
-    DELETE /api/projects/:id      - Delete project
-    `)
-
     console.log('✅ Grid saved successfully to localStorage')
 
     return {
@@ -694,8 +609,19 @@ export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, 
       boardSettings.paddingBoard,
       boardSettings.boardColor
     ],
-    () => {
-      initializeGrid()
+    (newValues, oldValues) => {
+      // Only reset nails if grid dimensions changed
+      const dimensionsChanged = oldValues && (
+        newValues[0] !== oldValues[0] || // dotsCountHorizontal
+        newValues[1] !== oldValues[1]    // dotsCountVertical
+      )
+
+      if (dimensionsChanged) {
+        // Grid size changed - need to clear nails that might be out of bounds
+        initializeGrid()
+      }
+
+      // Always regenerate the visual grid (preserves nails if no dimensions change)
       nextTick(() => {
         generateGrid()
       })
