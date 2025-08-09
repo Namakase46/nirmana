@@ -16,8 +16,8 @@
           
           <!-- Auth Buttons & Theme Toggle -->
           <div class="flex items-center space-x-3">
-            <!-- Auth Buttons -->
-            <div class="hidden sm:flex items-center space-x-3">
+            <!-- Auth Buttons (when not logged in) -->
+            <div v-if="!isLoggedIn" class="hidden sm:flex items-center space-x-3">
               <router-link 
                 to="/login"
                 class="px-4 py-2 text-gray-700 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-medium transition-colors duration-200"
@@ -31,9 +31,49 @@
                 Get Started
               </router-link>
             </div>
+
+            <!-- Profile Section (when logged in) -->
+            <div v-if="isLoggedIn" class="relative">
+              <button 
+                @click="showProfileMenu = !showProfileMenu"
+                class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
+              >
+                <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center">
+                  <span class="text-white text-sm font-semibold">{{ userInitials }}</span>
+                </div>
+                <span class="hidden sm:block text-gray-700 dark:text-gray-300 font-medium">{{ userFullName }}</span>
+                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              
+              <!-- Profile Dropdown -->
+              <div v-if="showProfileMenu" class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-10">
+                <router-link 
+                  to="/profile"
+                  @click="showProfileMenu = false"
+                  class="flex items-center px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200"
+                >
+                  <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                  View Profile
+                </router-link>
+                <hr class="my-1 border-gray-200 dark:border-gray-600">
+                <button 
+                  @click="handleSignOut"
+                  class="w-full flex items-center px-4 py-2 text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors duration-200"
+                >
+                  <svg class="w-4 h-4 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            </div>
             
-            <!-- Mobile Auth Menu -->
-            <div class="sm:hidden relative">
+            <!-- Mobile Auth Menu (when not logged in) -->
+            <div v-if="!isLoggedIn" class="sm:hidden relative">
               <button 
                 @click="showMobileMenu = !showMobileMenu"
                 class="p-2 rounded-lg bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors duration-200"
@@ -84,7 +124,7 @@
     <div class="pt-16 min-h-screen flex items-center justify-center px-4">
       <div class="max-w-4xl mx-auto text-center">
         <!-- Hero Section -->
-        <div class="mb-12">
+        <div class="my-12">
           <!-- Main Logo/Icon -->
           <div class="w-24 h-24 mx-auto mb-8 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-2xl shadow-2xl flex items-center justify-center transform hover:scale-105 transition-transform duration-300">
             <svg class="w-12 h-12 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -148,7 +188,7 @@
         <!-- Action Buttons -->
         <div class="flex flex-col space-y-6">
           <!-- Primary CTA -->
-          <div class="text-center">
+          <div v-if="!isLoggedIn" class="text-center">
             <router-link 
               to="/register"
               class="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105 text-lg"
@@ -166,13 +206,14 @@
           <!-- Secondary Actions -->
           <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
             <router-link 
-              to="/2d"
+              to="/2d/new"
               class="group w-full sm:w-auto bg-white/80 dark:bg-slate-800/80 hover:bg-white dark:hover:bg-slate-800 text-gray-900 dark:text-white px-6 py-3 rounded-xl font-semibold border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-105 flex items-center justify-center space-x-3"
             >
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
               </svg>
-              <span>Try 2D Demo</span>
+              <span v-if="isLoggedIn">Explore 2D</span>
+              <span v-else>Try 2D Demo</span>
             </router-link>
             
             <router-link 
@@ -187,7 +228,7 @@
           </div>
           
           <!-- Existing User Link -->
-          <div class="text-center">
+          <div v-if="!isLoggedIn" class="text-center">
             <p class="text-gray-600 dark:text-gray-400 text-sm">
               Already have an account?
               <router-link to="/login" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium ml-1">
@@ -218,7 +259,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useDark, useToggle } from '@vueuse/core'
 
 // Dark mode composable with explicit configuration
@@ -232,6 +273,63 @@ const toggleDarkMode = useToggle(isDark)
 
 // Mobile menu state
 const showMobileMenu = ref(false)
+const showProfileMenu = ref(false)
+
+// Authentication state
+const isLoggedIn = ref(false)
+const userData = ref(null)
+const userFullName = ref('')
+const userInitials = ref('')
+
+// Cookie utility function
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+  return null
+}
+
+// Check if user is logged in
+const checkAuthStatus = () => {
+  const token = getCookie('sess_token')
+  const userDataCookie = getCookie('user_data')
+  
+  if (token && userDataCookie) {
+    isLoggedIn.value = true
+    try {
+      userData.value = JSON.parse(userDataCookie)
+      userFullName.value = `${userData.value.first_name} ${userData.value.last_name}`
+      userInitials.value = `${userData.value.first_name.charAt(0)}${userData.value.last_name.charAt(0)}`.toUpperCase()
+    } catch (error) {
+      console.error('Error parsing user data:', error)
+      isLoggedIn.value = false
+    }
+  } else {
+    isLoggedIn.value = false
+  }
+}
+
+// Handle sign out
+const handleSignOut = () => {
+  // Clear cookies
+  document.cookie = 'sess_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+  document.cookie = 'user_data=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;'
+  
+  // Reset state
+  isLoggedIn.value = false
+  userData.value = null
+  userFullName.value = ''
+  userInitials.value = ''
+  showProfileMenu.value = false
+  
+  // Refresh the page to update the UI
+  window.location.reload()
+}
+
+// Check auth status when component mounts
+onMounted(() => {
+  checkAuthStatus()
+})
 </script>
 
 <style scoped>

@@ -32,7 +32,7 @@
       
       <!-- 2D Mode Toggle -->
       <router-link 
-        to="/2d"
+        to="/2d/new"
         class="p-3 bg-white/90 dark:bg-slate-800/90 rounded-lg shadow-lg hover:bg-white dark:hover:bg-slate-800 transition-colors"
         title="Switch to 2D Mode"
       >

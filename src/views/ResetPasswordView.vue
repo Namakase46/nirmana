@@ -32,108 +32,47 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="pt-16 min-h-screen flex items-center justify-center px-4 py-8">
+    <div class="pt-16 min-h-screen flex items-center justify-center px-4">
       <div class="max-w-md w-full space-y-8">
         <!-- Header -->
         <div class="text-center">
           <div class="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl shadow-lg flex items-center justify-center">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
             </svg>
           </div>
-          <h2 class="text-3xl font-bold mb-2">Join Nirmana</h2>
-          <p class="text-gray-600 dark:text-gray-400">Create your account to get started</p>
+          <h2 class="text-3xl font-bold mb-2">Reset Password</h2>
+          <p class="text-gray-600 dark:text-gray-400">Enter your new password below</p>
         </div>
 
-        <!-- Register Form -->
-        <div class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
-          <form @submit.prevent="handleRegister" class="space-y-6">
-            <!-- Name Fields -->
-            <div class="grid grid-cols-2 gap-4">
-              <!-- First Name -->
-              <div>
-                <label for="firstName" class="block text-sm font-medium mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  v-model="form.firstName"
-                  type="text"
-                  required
-                  class="block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="John"
-                />
-              </div>
-
-              <!-- Last Name -->
-              <div>
-                <label for="lastName" class="block text-sm font-medium mb-2">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  v-model="form.lastName"
-                  type="text"
-                  required
-                  class="block w-full px-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="Doe"
-                />
-              </div>
-            </div>
-
-            <!-- Email Field -->
+        <!-- Error for missing/invalid token -->
+        <div v-if="!token" class="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div class="flex items-center">
+            <svg class="w-5 h-5 text-red-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
             <div>
-              <label for="email" class="block text-sm font-medium mb-2">
-                Email Address
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                  </svg>
-                </div>
-                <input
-                  id="email"
-                  v-model="form.email"
-                  type="email"
-                  required
-                  class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="john.doe@example.com"
-                />
-              </div>
-            </div>
-
-            <!-- Username Field -->
-            <div>
-              <label for="username" class="block text-sm font-medium mb-2">
-                Username
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                </div>
-                <input
-                  id="username"
-                  v-model="form.username"
-                  type="text"
-                  required
-                  class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  :class="{ 'border-red-500 dark:border-red-500': usernameError }"
-                  placeholder="johndoe"
-                  @input="validateUsername"
-                />
-              </div>
-              <p v-if="usernameError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                {{ usernameError }}
+              <h3 class="text-red-800 dark:text-red-200 font-medium">Invalid Reset Link</h3>
+              <p class="text-red-700 dark:text-red-300 text-sm mt-1">
+                This password reset link is invalid or has expired. Please request a new one.
               </p>
+              <router-link 
+                to="/forgot-password" 
+                class="text-red-600 dark:text-red-400 hover:text-red-500 dark:hover:text-red-300 font-medium text-sm mt-2 inline-block"
+              >
+                Request New Reset Link →
+              </router-link>
             </div>
+          </div>
+        </div>
 
-            <!-- Password Field -->
+        <!-- Reset Password Form -->
+        <div v-else class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
+          <form @submit.prevent="handleResetPassword" class="space-y-6">
+            <!-- New Password Field -->
             <div>
-              <label for="password" class="block text-sm font-medium mb-2">
-                Password
+              <label for="new_password" class="block text-sm font-medium mb-2">
+                New Password
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -142,14 +81,13 @@
                   </svg>
                 </div>
                 <input
-                  id="password"
-                  v-model="form.password"
+                  id="new_password"
+                  v-model="form.new_password"
                   :type="showPassword ? 'text' : 'password'"
                   required
+                  minlength="8"
                   class="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  :class="{ 'border-red-500 dark:border-red-500': passwordError }"
-                  placeholder="Create a strong password"
-                  @input="validatePassword"
+                  placeholder="Enter your new password"
                 />
                 <button
                   type="button"
@@ -165,31 +103,30 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="passwordError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                {{ passwordError }}
+              <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Password must be at least 8 characters long
               </p>
             </div>
 
             <!-- Confirm Password Field -->
             <div>
-              <label for="confirmPassword" class="block text-sm font-medium mb-2">
-                Confirm Password
+              <label for="new_password_confirmation" class="block text-sm font-medium mb-2">
+                Confirm New Password
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                   </svg>
                 </div>
                 <input
-                  id="confirmPassword"
-                  v-model="form.confirmPassword"
+                  id="new_password_confirmation"
+                  v-model="form.new_password_confirmation"
                   :type="showConfirmPassword ? 'text' : 'password'"
                   required
+                  minlength="8"
                   class="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  :class="{ 'border-red-500 dark:border-red-500': confirmPasswordError }"
-                  placeholder="Confirm your password"
-                  @input="validateConfirmPassword"
+                  placeholder="Confirm your new password"
                 />
                 <button
                   type="button"
@@ -205,51 +142,32 @@
                   </svg>
                 </button>
               </div>
-              <p v-if="confirmPasswordError" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                {{ confirmPasswordError }}
-              </p>
             </div>
 
-            <!-- Terms and Conditions -->
-            <div class="flex items-start">
-              <input
-                id="terms"
-                v-model="form.acceptTerms"
-                type="checkbox"
-                required
-                class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded mt-1"
-              />
-              <label for="terms" class="ml-2 block text-sm text-gray-600 dark:text-gray-400">
-                I agree to the
-                <button type="button" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
-                  Terms of Service
-                </button>
-                and
-                <button type="button" class="text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
-                  Privacy Policy
-                </button>
-              </label>
+            <!-- Password Match Validation -->
+            <div v-if="form.new_password && form.new_password_confirmation && form.new_password !== form.new_password_confirmation" class="text-red-600 dark:text-red-400 text-sm">
+              Passwords do not match
             </div>
 
             <!-- Submit Button -->
             <button
               type="submit"
-              :disabled="isLoading || !isFormValid"
+              :disabled="isLoading || !form.new_password || !form.new_password_confirmation || form.new_password !== form.new_password_confirmation"
               class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105"
             >
               <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ isLoading ? 'Creating Account...' : 'Create Account' }}
+              {{ isLoading ? 'Updating password...' : 'Update Password' }}
             </button>
           </form>
 
-          <!-- Sign In Link -->
+          <!-- Back to Sign In Link -->
           <div class="mt-6 text-center">
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Already have an account?
+              Remember your password?
               <router-link to="/login" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 ml-1">
-                Sign in here
+                Back to Sign In
               </router-link>
             </p>
           </div>
@@ -267,8 +185,8 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div>
-        <p class="font-medium">Account Created Successfully!</p>
-        <p class="text-sm opacity-90">Please verify your email and login</p>
+        <p class="font-medium">Password Updated!</p>
+        <p class="text-sm opacity-90">Your password has been successfully updated</p>
       </div>
       <button @click="showSuccessNotification = false" class="ml-4 text-white hover:text-gray-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +205,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div>
-        <p class="font-medium">Registration Failed</p>
+        <p class="font-medium">Reset Failed</p>
         <p class="text-sm opacity-90">{{ errorMessage }}</p>
       </div>
       <button @click="showErrorNotification = false" class="ml-4 text-white hover:text-gray-200">
@@ -309,11 +227,12 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useDark, useToggle } from '@vueuse/core'
 
 const router = useRouter()
+const route = useRoute()
 
 // Dark mode composable
 const isDark = useDark({
@@ -324,15 +243,13 @@ const isDark = useDark({
 })
 const toggleDarkMode = useToggle(isDark)
 
+// Token from URL
+const token = ref('')
+
 // Form data
 const form = ref({
-  firstName: '',
-  lastName: '',
-  email: '',
-  username: '',
-  password: '',
-  confirmPassword: '',
-  acceptTerms: false
+  new_password: '',
+  new_password_confirmation: ''
 })
 
 // Form state
@@ -345,89 +262,30 @@ const showSuccessNotification = ref(false)
 const showErrorNotification = ref(false)
 const errorMessage = ref('')
 
-// Validation errors
-const usernameError = ref('')
-const passwordError = ref('')
-const confirmPasswordError = ref('')
-
-// Form validation
-const validateUsername = () => {
-  const username = form.value.username
-  if (username.length < 3) {
-    usernameError.value = 'Username must be at least 3 characters long'
-  } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-    usernameError.value = 'Username can only contain letters, numbers, and underscores'
-  } else {
-    usernameError.value = ''
-  }
-}
-
-const validatePassword = () => {
-  const password = form.value.password
-  if (password.length < 8) {
-    passwordError.value = 'Password must be at least 8 characters long'
-  } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password)) {
-    passwordError.value = 'Password must contain at least one uppercase letter, one lowercase letter, and one number'
-  } else {
-    passwordError.value = ''
-  }
-  
-  // Re-validate confirm password if it exists
-  if (form.value.confirmPassword) {
-    validateConfirmPassword()
-  }
-}
-
-const validateConfirmPassword = () => {
-  if (form.value.password !== form.value.confirmPassword) {
-    confirmPasswordError.value = 'Passwords do not match'
-  } else {
-    confirmPasswordError.value = ''
-  }
-}
-
-// Check if form is valid
-const isFormValid = computed(() => {
-  return form.value.firstName &&
-         form.value.lastName &&
-         form.value.email &&
-         form.value.username &&
-         form.value.password &&
-         form.value.confirmPassword &&
-         form.value.acceptTerms &&
-         !usernameError.value &&
-         !passwordError.value &&
-         !confirmPasswordError.value
+// Get token from URL query parameters
+onMounted(() => {
+  token.value = route.query.token || ''
 })
 
-// Handle registration
-const handleRegister = async () => {
+// Handle reset password
+const handleResetPassword = async () => {
   isLoading.value = true
   
   try {
-    // Validate all fields
-    validateUsername()
-    validatePassword()
-    validateConfirmPassword()
-    
-    if (!isFormValid.value) {
-      return
+    const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL
+    if (!backendUrl) {
+      throw new Error('Backend URL not configured')
     }
     
     // Prepare the data for the API request
     const requestData = {
-      user: {
-        username: form.value.username,
-        email: form.value.email,
-        password: form.value.password,
-        password_confirmation: form.value.confirmPassword,
-        first_name: form.value.firstName,
-        last_name: form.value.lastName
-      }
+      token: token.value,
+      new_password: form.value.new_password,
+      new_password_confirmation: form.value.new_password_confirmation
     }
     
     // Make the API request
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/v1/auth/sign_up`, {
+    const response = await fetch(`${backendUrl}/api/v1/auth/reset_password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -436,18 +294,22 @@ const handleRegister = async () => {
     })
     
     if (response.ok) {
-      // Success - show notification and redirect after a delay
+      // Show success notification
       showSuccessNotification.value = true
       
-      // Hide notification after 4 seconds and redirect
+      // Clear the form
+      form.value.new_password = ''
+      form.value.new_password_confirmation = ''
+      
+      // Redirect to login after 3 seconds
       setTimeout(() => {
         showSuccessNotification.value = false
         router.push('/login')
-      }, 4000)
+      }, 3000)
     } else {
       // Handle error response
-      const errorData = await response.json()
-      let errorMsg = 'Registration failed. Please try again.'
+      const errorData = await response.json().catch(() => ({ message: 'Failed to reset password' }))
+      let errorMsg = 'Failed to reset password. Please try again.'
       
       // Try to extract meaningful error message from response
       if (errorData.errors) {
@@ -456,7 +318,6 @@ const handleRegister = async () => {
         } else if (Array.isArray(errorData.errors)) {
           errorMsg = errorData.errors.join(', ')
         } else if (typeof errorData.errors === 'object') {
-          // Handle validation errors object
           const errors = []
           for (const [field, messages] of Object.entries(errorData.errors)) {
             if (Array.isArray(messages)) {
@@ -480,10 +341,10 @@ const handleRegister = async () => {
       }, 5000)
     }
   } catch (error) {
-    console.error('Registration error:', error)
+    console.error('Reset password error:', error)
     
     // Handle network or other errors
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error.message || 'Network error. Please check your connection and try again.'
     showErrorNotification.value = true
     
     // Hide error notification after 5 seconds

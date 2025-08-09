@@ -1,0 +1,631 @@
+<template>
+  <div class="h-screen w-screen overflow-hidden bg-slate-50 dark:bg-slate-900 relative text-gray-900 dark:text-white">
+    <!-- Mobile Alert -->
+    <div 
+      v-if="showMobileAlert" 
+      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center"
+    >
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md mx-4 text-center">
+        <div class="w-16 h-16 bg-indigo-500 rounded-full flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+          </svg>
+        </div>
+        <h2 class="text-2xl font-bold text-indigo-600 mb-4">Mobile Warning</h2>
+        <p class="text-gray-600 dark:text-gray-300 mb-6">
+          This application is optimized for desktop. For the best experience, use a computer or laptop.
+        </p>
+        <button 
+          @click="showMobileAlert = false"
+          class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+    
+    <!-- App Title -->
+    <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-20">
+      <h1 class="text-xl font-semibold bg-white/80 dark:bg-slate-800/80 px-5 py-2 rounded-full shadow-lg backdrop-blur">
+        {{ title }}
+      </h1>
+    </div>
+    
+    <!-- Navigation Buttons -->
+    <div class="fixed top-5 left-5 z-20 flex gap-2">
+      <!-- Home Button -->
+      <router-link 
+        to="/"
+        class="p-2 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-lg backdrop-blur hover:bg-white/90 dark:hover:bg-slate-800/90 transition-colors"
+        title="Back to Home"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+        </svg>
+      </router-link>
+      
+      <!-- 3D Mode Toggle -->
+      <router-link 
+        to="/3d"
+        class="p-2 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-lg backdrop-blur hover:bg-white/90 dark:hover:bg-slate-800/90 transition-colors"
+        title="Switch to 3D Mode"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+      </router-link>
+      
+      <!-- Dark Mode Toggle -->
+      <button 
+        @click="toggleDarkMode()"
+        class="p-2 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-lg backdrop-blur hover:bg-white/90 dark:hover:bg-slate-800/90 transition-colors"
+        :title="isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      >
+        <svg v-if="!isDark" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+        </svg>
+        <svg v-else class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+        </svg>
+      </button>
+    </div>
+    
+    <!-- Zoom Info & Reset View -->
+    <div class="fixed top-5 right-5 z-10 flex items-center gap-2">
+      <div class="bg-white/80 dark:bg-slate-800/80 px-3 py-2 rounded-lg shadow-lg backdrop-blur text-sm">
+        Zoom: {{ zoomPercentage }}%
+      </div>
+      <button 
+        @click="resetView()"
+        class="p-2 bg-white/80 dark:bg-slate-800/80 rounded-lg shadow-lg backdrop-blur hover:bg-white/90 dark:hover:bg-slate-800/90 transition-colors"
+        title="Reset View"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div v-if="isLoading" class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+      <div class="bg-white dark:bg-slate-800 rounded-2xl p-8 max-w-md mx-4 text-center">
+        <div class="w-16 h-16 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto mb-4"></div>
+        <h3 class="text-lg font-semibold mb-2">{{ loadingMessage }}</h3>
+        <p class="text-gray-600 dark:text-gray-300">Please wait...</p>
+      </div>
+    </div>
+
+    <!-- Grid Container -->
+    <div class="absolute inset-0 flex items-center justify-center p-20">
+      <div 
+        id="grid-container"
+        class="transition-transform duration-200 ease-out"
+        style="transform-origin: center center;"
+      ></div>
+    </div>
+
+    <!-- Floating Control Panel -->
+    <div class="fixed bottom-5 left-5 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 max-h-[70vh] flex flex-col">
+      <!-- Panel Header -->
+      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Control Panel</h3>
+      </div>
+
+      <!-- Tab Navigation -->
+      <div class="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+        <button
+          v-for="tab in tabs"
+          :key="tab.id"
+          @click="activeTab = tab.id"
+          :class="[
+            'flex-1 px-3 py-2 text-sm font-medium transition-colors',
+            activeTab === tab.id
+              ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-b-2 border-indigo-600 dark:border-indigo-400'
+              : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
+
+      <!-- Tab Content (Scrollable) -->
+      <div class="p-4 overflow-y-auto flex-1">
+        <!-- Board Tab -->
+        <div v-if="activeTab === 'board'" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Dots Count Horizontal
+            </label>
+            <input
+              v-model.number="boardSettings.dotsCountHorizontal"
+              type="number"
+              min="5"
+              max="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Dots Count Vertical
+            </label>
+            <input
+              v-model.number="boardSettings.dotsCountVertical"
+              type="number"
+              min="5"
+              max="50"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Margin Between Nails (px)
+            </label>
+            <input
+              v-model.number="boardSettings.marginBetweenNails"
+              type="number"
+              min="10"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Padding Board (px)
+            </label>
+            <input
+              v-model.number="boardSettings.paddingBoard"
+              type="number"
+              min="10"
+              max="100"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+          
+          <!-- Board Color Section -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Board Color
+            </label>
+            <div class="flex flex-wrap gap-3">
+              <div
+                v-for="colorOption in boardColorOptions"
+                :key="colorOption.id"
+                @click="selectBoardColor(colorOption)"
+                :class="[
+                  'relative cursor-pointer transition-all',
+                  selectedBoardColor === colorOption.id
+                    ? 'ring-2 ring-indigo-600 ring-offset-2'
+                    : 'hover:ring-2 hover:ring-gray-400 hover:ring-offset-1'
+                ]"
+                :title="colorOption.label"
+              >
+                <div
+                  :style="{ backgroundColor: colorOption.id === 'custom' ? customBoardColor : colorOption.color }"
+                  class="w-10 h-10 rounded-full border-2 border-white shadow-md relative"
+                >
+                  <!-- Pencil icon for custom color -->
+                  <svg v-if="colorOption.id === 'custom'" class="w-4 h-4 absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-white drop-shadow" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </div>
+                
+                <!-- Selected indicator -->
+                <div v-if="selectedBoardColor === colorOption.id" class="absolute -top-1 -right-1 w-5 h-5 bg-indigo-600 rounded-full flex items-center justify-center">
+                  <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Custom Color Picker -->
+            <div v-if="selectedBoardColor === 'custom'" class="mt-3">
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Custom Color
+              </label>
+              <input
+                v-model="customBoardColor"
+                type="color"
+                class="w-full h-10 border border-gray-300 dark:border-gray-600 rounded-md cursor-pointer"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Nails Tab -->
+        <div v-if="activeTab === 'nails'" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nail Width Type
+            </label>
+            <div class="space-y-2">
+              <button
+                v-for="widthOption in nailWidthOptions"
+                :key="widthOption.id"
+                @click="selectedNailWidth = widthOption.id"
+                :class="[
+                  'w-full p-3 text-left rounded-md border transition-colors flex items-center gap-3',
+                  selectedNailWidth === widthOption.id
+                    ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-200 dark:border-indigo-700'
+                    : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-slate-600'
+                ]"
+              >
+                <div
+                  class="w-6 h-6 rounded-full border-2 border-white shadow-sm"
+                  :style="{ backgroundColor: widthOption.color }"
+                ></div>
+                <span :class="selectedNailWidth === widthOption.id ? 'text-indigo-700 dark:text-indigo-300 font-medium' : 'text-gray-700 dark:text-gray-300'">
+                  {{ widthOption.label }}
+                </span>
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Nail Height (mm)
+            </label>
+            <div class="grid grid-cols-4 gap-2">
+              <button
+                v-for="height in nailHeightOptions"
+                :key="height"
+                @click="selectedNailHeight = height"
+                :class="[
+                  'p-2 text-sm font-medium rounded-md border transition-colors',
+                  selectedNailHeight === height
+                    ? 'bg-indigo-600 text-white border-indigo-600'
+                    : 'bg-white dark:bg-slate-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-slate-600'
+                ]"
+              >
+                {{ height }}
+              </button>
+            </div>
+          </div>
+
+          <div class="text-sm text-gray-600 dark:text-gray-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+            <p class="font-medium text-blue-700 dark:text-blue-300 mb-1">💡 How to use:</p>
+            <ul class="space-y-1 text-blue-600 dark:text-blue-400">
+              <li>• Click any position to place a nail</li>
+              <li>• Click again with same settings to remove</li>
+              <li>• Right-click to remove any nail</li>
+            </ul>
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              @click="clearAllNails()"
+              class="w-full bg-red-500 text-white px-4 py-2 rounded-md hover:bg-red-600 transition-colors hover:cursor-pointer"
+            >
+              Clear All Nails
+            </button>
+          </div>
+        </div>
+
+        <!-- Project Tab -->
+        <div v-if="activeTab === 'project'" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Project Name
+            </label>
+            <input
+              v-model="projectName"
+              type="text"
+              placeholder="Enter project name"
+              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+            />
+          </div>
+
+          <div class="flex gap-2">
+            <button
+              @click="() => {$emit('save-project'); testo()}"
+              :disabled="isSaving"
+              class="hover:cursor-pointer flex-1 bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+            >
+              <svg v-if="isSaving" class="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              {{ mode === 'edit' ? 'Update Project' : 'Save Project' }}
+            </button>
+          </div>
+
+          <!-- Project Info (for edit mode) -->
+          <div v-if="mode === 'edit' && projectInfo" class="bg-gray-50 dark:bg-slate-800 p-3 rounded-md">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Project Info</h4>
+            <div class="text-xs text-gray-600 dark:text-gray-400 space-y-1">
+              <p><strong>ID:</strong> {{ projectInfo.id }}</p>
+              <p><strong>Owner:</strong> {{ projectInfo.owner?.full_name }}</p>
+              <p><strong>Created:</strong> {{ formatDate(projectInfo.created_at) }}</p>
+              <p><strong>Modified:</strong> {{ formatDate(projectInfo.updated_at) }}</p>
+            </div>
+          </div>
+
+          <!-- Nails Statistics -->
+          <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-md">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Statistics</h4>
+            <div class="text-sm text-gray-600 dark:text-gray-400">
+              <p>Total Nails: {{ Object.keys(nails).length }}</p>
+              <p>Grid Size: {{ boardSettings.dotsCountHorizontal }}×{{ boardSettings.dotsCountVertical }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import { use2DGrid } from '@/composables/use2DGrid'
+import Toast from '@/components/Toast.vue'
+import { useToast } from '@/composables/useToast'
+
+// Props
+const props = defineProps({
+  title: {
+    type: String,
+    default: 'MDF Board Simulation with Margin'
+  },
+  mode: {
+    type: String,
+    default: 'new', // 'new' or 'edit'
+    validator: (value) => ['new', 'edit'].includes(value)
+  },
+  projectId: {
+    type: [String, Number],
+    default: null
+  },
+  projectInfo: {
+    type: Object,
+    default: null
+  },
+  isLoading: {
+    type: Boolean,
+    default: false
+  },
+  loadingMessage: {
+    type: String,
+    default: 'Loading project...'
+  },
+  isSaving: {
+    type: Boolean,
+    default: false
+  }
+})
+
+// Emits
+const emit = defineEmits(['save-project'])
+
+// Toast composable
+const { success, error, warning } = useToast()
+
+// Dark mode and mobile detection
+const isDark = ref(false)
+const showMobileAlert = ref(false)
+
+// Check for mobile device
+const checkMobile = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera
+  return /android|iphone|ipad|ipod|blackberry|iemobile|opera mini/i.test(userAgent.toLowerCase())
+}
+
+const testo = () => {
+  console.log('Testo function called...', nails.value)
+}
+
+// Add zoom functionality
+const handleWheel = (event) => {
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault()
+    const delta = event.deltaY
+    const zoomFactor = 0.1
+    
+    if (delta < 0) {
+      // Zoom in
+      scale.value = Math.min(scale.value + zoomFactor, 3)
+    } else {
+      // Zoom out
+      scale.value = Math.max(scale.value - zoomFactor, 0.2)
+    }
+    
+    updateTransform()
+  }
+}
+
+// Pan functionality
+let isPanning = false
+let lastPanX = 0
+let lastPanY = 0
+
+const handleMouseDown = (event) => {
+  if (event.button === 1 || (event.button === 0 && event.altKey)) { // Middle mouse or Alt+left click
+    event.preventDefault()
+    isPanning = true
+    lastPanX = event.clientX
+    lastPanY = event.clientY
+    document.body.style.cursor = 'grabbing'
+  }
+}
+
+const handleMouseMove = (event) => {
+  if (isPanning) {
+    const deltaX = event.clientX - lastPanX
+    const deltaY = event.clientY - lastPanY
+    
+    xOffset.value += deltaX
+    yOffset.value += deltaY
+    
+    lastPanX = event.clientX
+    lastPanY = event.clientY
+    
+    updateTransform()
+  }
+}
+
+const handleMouseUp = () => {
+  if (isPanning) {
+    isPanning = false
+    document.body.style.cursor = 'default'
+  }
+}
+
+// Toggle dark mode
+const toggleDarkMode = () => {
+  isDark.value = !isDark.value
+  document.documentElement.classList.toggle('dark', isDark.value)
+  localStorage.setItem('darkMode', isDark.value)
+}
+
+// Board settings
+const boardSettings = reactive({
+  dotsCountHorizontal: 20,
+  dotsCountVertical: 20,
+  marginBetweenNails: 10,
+  paddingBoard: 40,
+  boardColor: '#8B4513'
+})
+
+// Nail options
+const nailHeightOptions = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+const selectedNailHeight = ref(8)
+
+const nailWidthOptions = [
+  { id: 'thin', label: 'Thin (Red)', color: '#ef4444' },
+  { id: 'medium', label: 'Medium (Blue)', color: '#3b82f6' },
+  { id: 'thick', label: 'Thick (Green)', color: '#10b981' }
+]
+const selectedNailWidth = ref('thick')
+
+// Board color options
+const boardColorOptions = [
+  { id: '#8B4513', label: 'Brown', color: '#8B4513' },
+  { id: '#D2691E', label: 'Chocolate', color: '#D2691E' },
+  { id: '#CD853F', label: 'Peru', color: '#CD853F' },
+  { id: '#DEB887', label: 'Burlywood', color: '#DEB887' },
+  { id: '#F5DEB3', label: 'Wheat', color: '#F5DEB3' },
+  { id: 'custom', label: 'Custom', color: '#8B4513' }
+]
+const selectedBoardColor = ref('#8B4513')
+const customBoardColor = ref('#8B4513')
+
+// Tab management
+const activeTab = ref('board')
+const tabs = [
+  { id: 'board', label: 'Board' },
+  { id: 'nails', label: 'Nails' },
+  { id: 'project', label: 'Project' }
+]
+
+// Project settings
+const projectName = ref('')
+
+// Board color selection
+const selectBoardColor = (colorOption) => {
+  selectedBoardColor.value = colorOption.id
+  if (colorOption.id !== 'custom') {
+    boardSettings.boardColor = colorOption.color
+  }
+}
+
+// Watch for custom color changes
+watch(customBoardColor, (newColor) => {
+  if (selectedBoardColor.value === 'custom') {
+    boardSettings.boardColor = newColor
+  }
+})
+
+// Use 2D Grid composable
+const {
+  scale,
+  xOffset,
+  yOffset,
+  updateTransform,
+  nails,
+  zoomPercentage,
+  generateGrid,
+  clearAllNails,
+  resetView,
+  saveGrid,
+  loadGrid,
+  exportGrid,
+  importGrid,
+  initializeGrid
+} = use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailWidthOptions)
+
+// File import handler
+const handleFileImport = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+
+  try {
+    await importGrid(file)
+    success('Grid imported successfully')
+  } catch (error) {
+    console.error('Import error:', error)
+    error('Failed to import grid: ' + error.message)
+  }
+  
+  // Clear the input
+  event.target.value = ''
+}
+
+// Helper function to get auth token
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop().split(';').shift()
+  return null
+}
+
+// Helper function to format date
+const formatDate = (dateString) => {
+  if (!dateString) return 'N/A'
+  return new Date(dateString).toLocaleString()
+}
+
+// Initialize component
+onMounted(() => {
+  // Check for mobile
+  if (checkMobile()) {
+    showMobileAlert.value = true
+  }
+
+  // Load dark mode preference
+  const savedDarkMode = localStorage.getItem('darkMode')
+  if (savedDarkMode !== null) {
+    isDark.value = JSON.parse(savedDarkMode)
+    document.documentElement.classList.toggle('dark', isDark.value)
+  }
+
+  // Generate initial grid
+  nextTick(() => {
+    generateGrid()
+  })
+
+  // Add global event listeners for viewport interaction
+  window.addEventListener('wheel', handleWheel, { passive: false })
+  window.addEventListener('mousedown', handleMouseDown)
+  window.addEventListener('mousemove', handleMouseMove)
+  window.addEventListener('mouseup', handleMouseUp)
+})
+
+// Cleanup event listeners
+onUnmounted(() => {
+  window.removeEventListener('wheel', handleWheel)
+  window.removeEventListener('mousedown', handleMouseDown)
+  window.removeEventListener('mousemove', handleMouseMove)
+  window.removeEventListener('mouseup', handleMouseUp)
+})
+
+// Expose methods for parent components
+defineExpose({
+  nails,
+  boardSettings,
+  projectName,
+  generateGrid,
+  initializeGrid
+})
+</script>

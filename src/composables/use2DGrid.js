@@ -1,215 +1,280 @@
-import { ref, reactive, computed, nextTick } from 'vue'
-import { useLocalStorage } from '@vueuse/core'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 
-export function use2DGrid() {
-  // State
+export function use2DGrid(boardSettings, selectedNailHeight, selectedNailWidth, nailWidthOptions) {
+  // Viewport and interaction state
   const scale = ref(1)
   const xOffset = ref(0)
   const yOffset = ref(0)
   const isDragging = ref(false)
-  const selectedColor = ref('red')
-  const currentTool = ref('pencil')
-  const customColor = ref('#6366f1')
-  const isControlsCollapsed = useLocalStorage('controls-collapsed', false)
 
-  const gridState = reactive({
-    width: 800,
-    height: 800,
-    margin: 40,
-    spacing: 25,
-    dotNumber: 9
-  })
+  // Grid data - using coordinate-based structure
+  const nails = ref({})
 
-  const dots = ref([])
-  const dotState = useLocalStorage('nirmana-dot-state', {})
+  // Helper function to get nail at position
+  const getNailAt = (x, y) => {
+    const key = `${x},${y}`
+    return nails.value[key] || null
+  }
 
-  // Computed
-  const countX = computed(() => Math.floor(gridState.width / gridState.spacing))
-  const countY = computed(() => Math.floor(gridState.height / gridState.spacing))
-  const actualGridWidth = computed(() => (countX.value - 1) * gridState.spacing)
-  const actualGridHeight = computed(() => (countY.value - 1) * gridState.spacing)
-  const gridSizeX = computed(() => actualGridWidth.value + 2 * gridState.margin)
-  const gridSizeY = computed(() => actualGridHeight.value + 2 * gridState.margin)
+  // Helper function to set nail at position
+  const setNailAt = (x, y, nailData) => {
+    const key = `${x},${y}`
+    if (nailData) {
+      nails.value[key] = nailData
+    } else {
+      delete nails.value[key]
+    }
+  }
+
+  // Helper function to convert width number to width type
+  const getWidthTypeFromNumber = (width) => {
+    switch (width) {
+      case 1: return 'thin'
+      case 2: return 'medium'
+      case 3: return 'thick'
+      default: return 'thin'
+    }
+  }
+
+  // Helper function to convert width type to number
+  const getWidthNumberFromType = (widthType) => {
+    switch (widthType) {
+      case 'thin': return 1
+      case 'medium': return 2
+      case 'thick': return 3
+      default: return 1
+    }
+  }
+
+  // Helper function to get color from width number
+  const getColorFromWidth = (width) => {
+    const widthType = getWidthTypeFromNumber(width)
+    const widthOption = nailWidthOptions.find(w => w.id === widthType)
+    return widthOption?.color || '#ef4444'
+  }
+
+  // Helper function to get label from width number
+  const getLabelFromWidth = (width) => {
+    const widthType = getWidthTypeFromNumber(width)
+    const widthOption = nailWidthOptions.find(w => w.id === widthType)
+    return widthOption?.label || 'Thin (Red)'
+  }
+
+  // Helper function to darken color for border
+  const adjustBorderColor = (color) => {
+    // Convert hex to RGB
+    const hex = color.replace('#', '')
+    const r = parseInt(hex.substr(0, 2), 16)
+    const g = parseInt(hex.substr(2, 2), 16)
+    const b = parseInt(hex.substr(4, 2), 16)
+
+    // Darken by 30%
+    const darkenedR = Math.max(0, Math.floor(r * 0.7))
+    const darkenedG = Math.max(0, Math.floor(g * 0.7))
+    const darkenedB = Math.max(0, Math.floor(b * 0.7))
+
+    // Convert back to hex
+    return `#${darkenedR.toString(16).padStart(2, '0')}${darkenedG.toString(16).padStart(2, '0')}${darkenedB.toString(16).padStart(2, '0')}`
+  }
+
+  // Computed properties
   const zoomPercentage = computed(() => Math.round(scale.value * 100))
 
-  // Methods
+  const gridStyles = computed(() => ({
+    display: 'grid',
+    gridTemplateColumns: `repeat(${boardSettings.dotsCountHorizontal}, 1fr)`,
+    gridTemplateRows: `repeat(${boardSettings.dotsCountVertical}, 1fr)`,
+    gap: `${boardSettings.marginBetweenNails}px`,
+    padding: `${boardSettings.paddingBoard}px`,
+    backgroundColor: boardSettings.boardColor || '#8B4513',
+    border: `4px solid ${adjustBorderColor(boardSettings.boardColor || '#8B4513')}`,
+    borderRadius: '8px',
+    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+    position: 'relative'
+  }))
+
+  const boardDimensions = computed(() => {
+    const nailSize = 20 // Base nail size
+    const totalWidth = (boardSettings.dotsCountHorizontal * nailSize) +
+      ((boardSettings.dotsCountHorizontal - 1) * boardSettings.marginBetweenNails) +
+      (boardSettings.paddingBoard * 2)
+    const totalHeight = (boardSettings.dotsCountVertical * nailSize) +
+      ((boardSettings.dotsCountVertical - 1) * boardSettings.marginBetweenNails) +
+      (boardSettings.paddingBoard * 2)
+
+    return { width: totalWidth, height: totalHeight }
+  })
+
+  // Initialize grid data
+  const initializeGrid = () => {
+    nails.value = {}
+    // Initialize empty grid - nails will be added dynamically when placed
+  }
+
+  // Generate the grid DOM
   const generateGrid = () => {
-    dots.value = []
     const container = document.getElementById('grid-container')
     if (!container) return
 
-    // Clear existing grid
+    // Clear existing content
     container.innerHTML = ''
 
-    // Create grid container
-    const gridDiv = document.createElement('div')
-    gridDiv.className = 'grid-container relative border-2 border-gray-800 dark:border-gray-600'
+    // Create the main board container
+    const boardElement = document.createElement('div')
+    boardElement.className = 'mdf-board'
 
-    // Set container dimensions to exactly fit the grid with margins
-    gridDiv.style.width = `${gridSizeX.value}px`
-    gridDiv.style.height = `${gridSizeY.value}px`
+    // Apply CSS Grid styles
+    Object.assign(boardElement.style, gridStyles.value)
 
-    // Generate dots
-    for (let y = 0; y < countY.value; y++) {
-      for (let x = 0; x < countX.value; x++) {
-        // Position dots with equal spacing and equal margins on all sides
-        const dotX = gridState.margin + (x * gridState.spacing)
-        const dotY = gridState.margin + (y * gridState.spacing)
+    // Create nail slots for each position
+    for (let row = 0; row < boardSettings.dotsCountVertical; row++) {
+      for (let col = 0; col < boardSettings.dotsCountHorizontal; col++) {
+        const nailElement = document.createElement('div')
+        nailElement.className = 'nail-slot'
+        nailElement.dataset.x = col
+        nailElement.dataset.y = row
+        nailElement.dataset.position = `${col},${row}`
 
-        const dot = {
-          id: `${x}-${y}`,
-          x: dotX,
-          y: dotY,
-          colorClass: '',
-          number: gridState.dotNumber,
-          index: y * countX.value + x
+        // Base nail slot styling
+        nailElement.style.cssText = `
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          background: #666666;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+          color: white;
+          font-weight: bold;
+          font-size: 10px;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        `
+
+        // Check if there's a nail at this position
+        const nail = getNailAt(col, row)
+        if (nail) {
+          updateNailVisual(nailElement, nail)
         }
 
-        dots.value.push(dot)
+        // Add hover effect for empty slots
+        nailElement.addEventListener('mouseenter', () => {
+          if (!getNailAt(col, row)) {
+            nailElement.style.transform = 'scale(1.1)'
+            nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3), 0 0 8px rgba(99, 102, 241, 0.4)'
+          }
+        })
 
-        // Create DOM element
-        const dotElement = document.createElement('div')
-        dotElement.className = 'dot absolute bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-white font-bold transition-colors duration-200 pointer-events-auto z-10'
-        dotElement.style.width = '18px'
-        dotElement.style.height = '18px'
-        dotElement.style.left = `${dotX}px`
-        dotElement.style.top = `${dotY}px`
-        dotElement.style.transform = 'translate(-50%, -50%)'
-        dotElement.style.fontSize = '10px'
-        dotElement.dataset.dotId = dot.id
-        dotElement.innerHTML = `<span style="display: none;">${gridState.dotNumber}</span>`
+        nailElement.addEventListener('mouseleave', () => {
+          if (!getNailAt(col, row)) {
+            nailElement.style.transform = 'scale(1)'
+            nailElement.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)'
+          }
+        })
 
-        // Add hit area
-        const hitArea = document.createElement('div')
-        hitArea.className = 'absolute rounded-full'
-        hitArea.style.width = '28px'
-        hitArea.style.height = '28px'
-        hitArea.style.top = '50%'
-        hitArea.style.left = '50%'
-        hitArea.style.transform = 'translate(-50%, -50%)'
-        hitArea.style.zIndex = '-1'
-        dotElement.appendChild(hitArea)
+        // Add click handler
+        nailElement.addEventListener('click', () => addNailAtPosition(col, row))
 
-        // Add event listeners
-        dotElement.addEventListener('click', () => applyToolToDot(dot))
-        dotElement.addEventListener('mousedown', (e) => startSelect(e, dot))
+        // Add right-click handler for removal
+        nailElement.addEventListener('contextmenu', (e) => {
+          e.preventDefault()
+          removeNailAtPosition(col, row)
+        })
 
-        gridDiv.appendChild(dotElement)
+        boardElement.appendChild(nailElement)
       }
     }
 
-    container.appendChild(gridDiv)
-    addGridMarkers(gridDiv)
-    adjustHitArea()
+    container.appendChild(boardElement)
+    updateTransform()
   }
 
-  const applyToolToDot = (dot) => {
-    const dotElement = document.querySelector(`[data-dot-id="${dot.id}"]`)
-    if (!dotElement) return
+  // Add nail at position (with toggle functionality)
+  const addNailAtPosition = (x, y) => {
+    if (selectedNailHeight.value === 0) {
+      return // No height selected
+    }
 
-    // Remove all color classes first
-    removeColorClasses(dotElement)
+    const selectedWidthNumber = getWidthNumberFromType(selectedNailWidth.value)
+    const existingNail = getNailAt(x, y)
 
-    if (currentTool.value === 'pencil') {
-      dot.colorClass = `color-${selectedColor.value}`
+    // Check if nail already exists with same height and width - if so, remove it (toggle)
+    if (existingNail &&
+      existingNail.height === selectedNailHeight.value &&
+      existingNail.width === selectedWidthNumber) {
+      // Remove the nail (toggle off)
+      removeNailAtPosition(x, y)
+      return
+    }
 
-      if (selectedColor.value === 'custom') {
-        dotElement.style.backgroundColor = customColor.value
-      } else {
-        dotElement.classList.add(`color-${selectedColor.value}`)
-        dotElement.style.backgroundColor = ''
-      }
+    // Create new nail data with numeric width
+    const nailData = {
+      height: selectedNailHeight.value,
+      width: selectedWidthNumber // Store as number instead of string
+    }
 
-      // Show number
-      const span = dotElement.querySelector('span')
-      if (span) span.style.display = 'block'
+    // Set nail at position
+    setNailAt(x, y, nailData)
 
-    } else if (currentTool.value === 'eraser') {
-      dot.colorClass = ''
-      dotElement.style.backgroundColor = ''
-      dotElement.classList.add('bg-gray-300', 'dark:bg-gray-600')
-
-      // Hide number
-      const span = dotElement.querySelector('span')
-      if (span) span.style.display = 'none'
+    // Update visual representation
+    const nailElement = document.querySelector(`[data-position="${x},${y}"]`)
+    if (nailElement) {
+      updateNailVisual(nailElement, nailData)
     }
   }
 
-  const removeColorClasses = (element) => {
-    const colorClasses = [
-      'color-red', 'color-blue', 'color-green', 'color-yellow',
-      'color-purple', 'color-orange', 'color-pink', 'color-teal',
-      'bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500',
-      'bg-purple-500', 'bg-orange-500', 'bg-pink-500', 'bg-teal-500',
-      'bg-gray-300', 'dark:bg-gray-600'
-    ]
-    element.classList.remove(...colorClasses)
-  }
+  // Update nail visual appearance
+  const updateNailVisual = (nailElement, nail) => {
+    if (!nailElement) return
 
-  const startSelect = (e, dot) => {
-    e.preventDefault()
-    applyToolToDot(dot)
-  }
+    if (nail && nail.height > 0) {
+      // Derive color and label from numeric width
+      const color = getColorFromWidth(nail.width)
+      const label = getLabelFromWidth(nail.width)
 
-  const addGridMarkers = (gridDiv) => {
-    // Add measurement markers to all four sides
-    const spacing = gridState.spacing
-    const margin = gridState.margin
-
-    // Top and bottom markers
-    for (let x = 0; x < countX.value; x++) {
-      const xPos = margin + (x * spacing)
-
-      // Top marker
-      const topMarker = document.createElement('div')
-      topMarker.className = 'marker absolute w-2.5 h-0.5 bg-blue-500 z-20'
-      topMarker.style.left = `${xPos}px`
-      topMarker.style.top = '-6px'
-      topMarker.style.transform = 'translateX(-50%)'
-      gridDiv.appendChild(topMarker)
-
-      // Bottom marker
-      const bottomMarker = document.createElement('div')
-      bottomMarker.className = 'marker absolute w-2.5 h-0.5 bg-blue-500 z-20'
-      bottomMarker.style.left = `${xPos}px`
-      bottomMarker.style.bottom = '-6px'
-      bottomMarker.style.transform = 'translateX(-50%)'
-      gridDiv.appendChild(bottomMarker)
-    }
-
-    // Left and right markers
-    for (let y = 0; y < countY.value; y++) {
-      const yPos = margin + (y * spacing)
-
-      // Left marker
-      const leftMarker = document.createElement('div')
-      leftMarker.className = 'marker absolute w-0.5 h-2.5 bg-orange-500 z-20'
-      leftMarker.style.left = '-6px'
-      leftMarker.style.top = `${yPos}px`
-      leftMarker.style.transform = 'translateY(-50%)'
-      gridDiv.appendChild(leftMarker)
-
-      // Right marker
-      const rightMarker = document.createElement('div')
-      rightMarker.className = 'marker absolute w-0.5 h-2.5 bg-orange-500 z-20'
-      rightMarker.style.right = '-6px'
-      rightMarker.style.top = `${yPos}px`
-      rightMarker.style.transform = 'translateY(-50%)'
-      gridDiv.appendChild(rightMarker)
+      // Show nail with height number and color
+      nailElement.style.backgroundColor = color
+      nailElement.style.color = '#ffffff'
+      nailElement.style.fontWeight = 'bold'
+      nailElement.style.fontSize = '10px'
+      nailElement.style.textShadow = '0 1px 2px rgba(0,0,0,0.8)'
+      nailElement.innerHTML = nail.height.toString()
+      nailElement.style.cursor = 'pointer'
+      nailElement.title = `Height: ${nail.height}, Width: ${label}\nClick with same settings to remove\nRight-click to remove`
+    } else {
+      // Reset to empty slot
+      nailElement.style.backgroundColor = '#666666'
+      nailElement.style.color = 'white'
+      nailElement.innerHTML = ''
+      nailElement.title = 'Click to add nail'
     }
   }
 
-  const adjustHitArea = () => {
-    const totalDots = countX.value * countY.value
-    let hitAreaSize = 20 // Default size
+  // Remove nail at position
+  const removeNailAtPosition = (x, y) => {
+    setNailAt(x, y, null) // Remove nail from data structure
 
-    if (totalDots > 2000) hitAreaSize = 15
-    if (totalDots > 4000) hitAreaSize = 12
-    if (totalDots > 6000) hitAreaSize = 10
-
-    document.documentElement.style.setProperty('--hit-area-size', `${hitAreaSize}px`)
+    const nailElement = document.querySelector(`[data-position="${x},${y}"]`)
+    if (nailElement) {
+      updateNailVisual(nailElement, null)
+    }
   }
 
+  // Clear all nails
+  const clearAllNails = () => {
+    nails.value = {} // Clear all nails from data structure
+
+    // Update all visual elements
+    const nailElements = document.querySelectorAll('.nail-slot')
+    nailElements.forEach(element => {
+      updateNailVisual(element, null)
+    })
+  }
+
+  // Viewport controls
   const resetView = () => {
     scale.value = 1
     xOffset.value = 0
@@ -221,103 +286,447 @@ export function use2DGrid() {
     const container = document.getElementById('grid-container')
     if (container) {
       container.style.transform = `translate(${xOffset.value}px, ${yOffset.value}px) scale(${scale.value})`
+      container.style.transformOrigin = 'center center'
     }
   }
 
-  const fillAllDots = () => {
-    dots.value.forEach(dot => {
-      applyToolToDot(dot)
-    })
-  }
-
-  const clearAllDots = () => {
-    dots.value.forEach(dot => {
-      const dotElement = document.querySelector(`[data-dot-id="${dot.id}"]`)
-      if (dotElement) {
-        dot.colorClass = ''
-        removeColorClasses(dotElement)
-        dotElement.style.backgroundColor = ''
-        dotElement.classList.add('bg-gray-300', 'dark:bg-gray-600')
-
-        const span = dotElement.querySelector('span')
-        if (span) span.style.display = 'none'
-      }
-    })
-  }
-
+  // Save/Load functionality with improved data structure
   const saveGrid = () => {
-    const state = {
-      dots: dots.value,
-      gridState: gridState
+    const gridState = {
+      // Metadata
+      timestamp: new Date().toISOString(),
+
+      // Board Configuration
+      boardConfig: {
+        dimensions: {
+          dotsCountHorizontal: boardSettings.dotsCountHorizontal,
+          dotsCountVertical: boardSettings.dotsCountVertical,
+          marginBetweenNails: boardSettings.marginBetweenNails,
+          paddingBoard: boardSettings.paddingBoard
+        },
+        appearance: {
+          boardColor: boardSettings.boardColor
+        }
+      },
+
+      // Nail Types (for reference)
+      nailTypes: nailWidthOptions.reduce((acc, option) => {
+        acc[option.id] = {
+          id: option.id,
+          label: option.label,
+          color: option.color,
+          width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
+        }
+        return acc
+      }, {}),
+
+      // Nails data - already in the correct coordinate-based format
+      nails: Object.fromEntries(
+        Object.entries(nails.value).map(([positionKey, nail]) => [
+          positionKey,
+          {
+            height: nail.height,
+            width: nail.width // Now using numeric width
+          }
+        ])
+      ),
+
+      // View state
+      viewState: {
+        scale: scale.value,
+        xOffset: xOffset.value,
+        yOffset: yOffset.value
+      }
     }
-    localStorage.setItem('nirmana-grid-state', JSON.stringify(state))
+
+    localStorage.setItem('nirmana-grid-state', JSON.stringify(gridState))
+
+    // Console log the complete data structure for backend database
+    console.log('🎯 BACKEND DATABASE STRUCTURE - Complete Grid State:')
+    console.log('='.repeat(60))
+    console.log(JSON.stringify(gridState, null, 2))
+
+    // Console log optimized structure for backend database (normalized columns)
+    const backendOptimized = {
+      // Database columns mapping:
+      id: null,          // Auto-generated by database
+      user_id: null,     // To be assigned by backend
+      project_name: `MDF Grid ${new Date().toLocaleDateString()}`,
+
+      // board_config JSONB column
+      board_config: {
+        dimensions: {
+          dotsCountHorizontal: gridState.boardConfig.dimensions.dotsCountHorizontal,
+          dotsCountVertical: gridState.boardConfig.dimensions.dotsCountVertical,
+          marginBetweenNails: gridState.boardConfig.dimensions.marginBetweenNails,
+          paddingBoard: gridState.boardConfig.dimensions.paddingBoard
+        },
+        appearance: {
+          boardColor: gridState.boardConfig.appearance.boardColor
+        }
+      },
+
+      // nails JSONB column (position-based, optimized)
+      nails: Object.fromEntries(
+        Object.entries(gridState.nails).map(([positionKey, nail]) => [
+          positionKey,
+          {
+            height: nail.height,
+            width: nail.width
+          }
+        ])
+      ),
+
+      // view_state JSONB column (optional, can be null)
+      view_state: {
+        scale: gridState.viewState.scale,
+        xOffset: gridState.viewState.xOffset,
+        yOffset: gridState.viewState.yOffset
+      },
+
+      // Timestamps handled by database
+      created_at: null, // Will be set by database DEFAULT CURRENT_TIMESTAMP
+      updated_at: null  // Will be set by database DEFAULT CURRENT_TIMESTAMP
+    }
+
+    console.log('🚀 BACKEND OPTIMIZED STRUCTURE (Normalized Columns):')
+    console.log('='.repeat(60))
+    console.log(JSON.stringify(backendOptimized, null, 2))
+
+    // Console log database table suggestions (normalized JSONB columns)
+    console.log('📊 OPTIMIZED DATABASE SCHEMA (Normalized JSONB columns):')
+    console.log('='.repeat(60))
+    console.log(`
+    -- Table: projects (normalized with separate JSONB columns)
+    CREATE TABLE projects (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL,
+      project_name VARCHAR(255) NOT NULL,
+
+      -- Separate JSONB columns for better organization
+      board_config JSONB NOT NULL,  -- dimensions, appearance, etc.
+      nails JSONB NOT NULL,         -- position-based nail data {"x,y": {...}}
+
+      -- Metadata
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+    
+    -- Indexes for performance and queries
+    CREATE INDEX idx_projects_user_id ON projects(user_id);
+    CREATE INDEX idx_projects_nails_gin ON projects USING GIN (nails);
+    CREATE INDEX idx_projects_board_config_gin ON projects USING GIN (board_config);
+    
+    -- Expression indexes for commonly queried computed values
+    CREATE INDEX idx_projects_nail_count ON projects(jsonb_object_length(nails));
+    CREATE INDEX idx_projects_board_dimensions ON projects(
+      (board_config->'dimensions'->>'dotsCountHorizontal')::integer,
+      (board_config->'dimensions'->>'dotsCountVertical')::integer
+    );
+    
+    -- Example queries with the new schema:
+    -- Get all projects for a user: 
+    SELECT * FROM projects WHERE user_id = $1;
+    
+    -- Get projects with more than 10 nails:
+    SELECT * FROM projects WHERE jsonb_object_length(nails) > 10;
+    
+    -- Get nail at specific position:
+    SELECT nails->'5,3' FROM projects WHERE id = $1;
+    
+    -- Get all nail positions and heights:
+    SELECT jsonb_object_keys(nails) as position, 
+           nails->jsonb_object_keys(nails)->>'height' as height,
+           nails->jsonb_object_keys(nails)->>'width' as width
+    FROM projects WHERE id = $1;
+    
+    -- Get board utilization percentage:
+    SELECT 
+      jsonb_object_length(nails) as total_nails,
+      (board_config->'dimensions'->>'dotsCountHorizontal')::integer * 
+      (board_config->'dimensions'->>'dotsCountVertical')::integer as total_slots,
+      ROUND(
+        (jsonb_object_length(nails)::float / 
+         ((board_config->'dimensions'->>'dotsCountHorizontal')::integer * 
+          (board_config->'dimensions'->>'dotsCountVertical')::integer)) * 100, 2
+      ) as utilization_percentage
+    FROM projects WHERE id = $1;
+    
+    -- Find projects by board size:
+    SELECT * FROM projects 
+    WHERE board_config->'dimensions'->>'dotsCountHorizontal' = '10'
+      AND board_config->'dimensions'->>'dotsCountVertical' = '8';
+    
+    -- Get all nail types used in a project:
+    SELECT DISTINCT nails->key->>'width' as nail_width
+    FROM projects, jsonb_object_keys(nails) as key
+    WHERE id = $1;
+    `)
+
+    // Console log API endpoint suggestions
+    console.log('🌐 SUGGESTED API ENDPOINTS:')
+    console.log('='.repeat(60))
+    console.log(`
+    POST   /api/projects          - Create new project
+    GET    /api/projects          - Get user's projects
+    GET    /api/projects/:id      - Get specific project
+    PUT    /api/projects/:id      - Update project
+    DELETE /api/projects/:id      - Delete project
+    `)
+
+    console.log('✅ Grid saved successfully to localStorage')
+
+    return {
+      fullState: gridState,
+      backendOptimized: backendOptimized,
+      nailCount: Object.keys(gridState.nails).length
+    }
   }
 
   const loadGrid = () => {
     const saved = localStorage.getItem('nirmana-grid-state')
     if (saved) {
-      const state = JSON.parse(saved)
-      Object.assign(gridState, state.gridState)
-      generateGrid()
-      // Restore dot states
-      nextTick(() => {
-        state.dots.forEach(savedDot => {
-          const dot = dots.value.find(d => d.id === savedDot.id)
-          if (dot) {
-            dot.colorClass = savedDot.colorClass
-            if (savedDot.colorClass) {
-              applyToolToDot(dot)
+      try {
+        const gridState = JSON.parse(saved)        // Handle legacy format (backwards compatibility)
+        if (gridState.nails && !gridState.timestamp && Array.isArray(gridState.nails)) {
+          console.log('Loading legacy grid format - converting to coordinate-based structure')
+          nails.value = {}
+
+          gridState.nails.forEach(nail => {
+            if (nail.height > 0) {
+              const key = `${nail.x},${nail.y}`
+              // Convert legacy widthType to numeric width
+              const width = nail.widthType ? getWidthNumberFromType(nail.widthType) : 1
+              nails.value[key] = {
+                height: nail.height,
+                width: width // Convert to numeric width
+              }
             }
+          })
+
+          if (gridState.boardSettings) {
+            Object.assign(boardSettings, gridState.boardSettings)
           }
+        } else if (gridState.timestamp) {
+          console.log('Loading enhanced grid format from ' + gridState.timestamp)
+
+          // Load board configuration
+          if (gridState.boardConfig) {
+            Object.assign(boardSettings, {
+              ...gridState.boardConfig.dimensions,
+              ...gridState.boardConfig.appearance
+            })
+          }          // Load nails - already in coordinate-based format
+          if (gridState.nails) {
+            nails.value = {}
+
+            Object.entries(gridState.nails).forEach(([positionKey, nail]) => {
+              // Handle both new simplified structure and legacy structure
+              let height, width
+
+              if (nail.properties) {
+                // Legacy structure with properties wrapper
+                height = nail.properties.height
+                width = nail.properties.width
+              } else {
+                // New simplified structure
+                height = nail.height
+                width = nail.width
+              }
+
+              // Handle both numeric width and legacy string width
+              if (typeof width === 'string') {
+                // Convert legacy string width to numeric
+                width = getWidthNumberFromType(width)
+              }
+
+              nails.value[positionKey] = {
+                height: height,
+                width: width // Store as numeric width
+              }
+            })
+          }
+
+          // Load view state
+          if (gridState.viewState) {
+            scale.value = gridState.viewState.scale || 1
+            xOffset.value = gridState.viewState.xOffset || 0
+            yOffset.value = gridState.viewState.yOffset || 0
+          }
+        }
+
+        // Update visuals after loading
+        nextTick(() => {
+          generateGrid() // Regenerate grid with loaded data
+          updateTransform()
         })
-      })
+
+      } catch (error) {
+        console.error('Failed to load grid state:', error)
+      }
     }
   }
 
-  const exportImage = () => {
-    // Create canvas and export logic
-    const container = document.getElementById('grid-container')
-    if (container) {
-      // Implementation for canvas export
-      console.log('Export functionality to be implemented')
+  // Export grid data as JSON (for sharing/backup)
+  const exportGrid = () => {
+    const gridState = {
+      timestamp: new Date().toISOString(),
+      boardConfig: {
+        dimensions: {
+          dotsCountHorizontal: boardSettings.dotsCountHorizontal,
+          dotsCountVertical: boardSettings.dotsCountVertical,
+          marginBetweenNails: boardSettings.marginBetweenNails,
+          paddingBoard: boardSettings.paddingBoard
+        },
+        appearance: {
+          boardColor: boardSettings.boardColor
+        }
+      },
+      nailTypes: nailWidthOptions.reduce((acc, option) => {
+        acc[option.id] = {
+          id: option.id,
+          label: option.label,
+          color: option.color,
+          width: option.id === 'thin' ? 1 : option.id === 'medium' ? 2 : 3
+        }
+        return acc
+      }, {}),
+      nails: Object.fromEntries(
+        Object.entries(nails.value).map(([positionKey, nail]) => [
+          positionKey,
+          {
+            height: nail.height,
+            width: nail.width // Using numeric width
+          }
+        ])
+      )
     }
+
+    const dataStr = JSON.stringify(gridState, null, 2)
+    const dataBlob = new Blob([dataStr], { type: 'application/json' })
+    const url = URL.createObjectURL(dataBlob)
+
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `nirmana-grid-${new Date().toISOString().slice(0, 10)}.json`
+    link.click()
+
+    URL.revokeObjectURL(url)
   }
 
-  const updateDotNumbers = () => {
-    // Update all dot numbers when dotNumber changes
-    dots.value.forEach(dot => {
-      const dotElement = document.querySelector(`[data-dot-id="${dot.id}"]`)
-      if (dotElement) {
-        const span = dotElement.querySelector('span')
-        if (span) {
-          span.textContent = gridState.dotNumber.toString()
+  // Import grid data from JSON file
+  const importGrid = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        try {
+          const gridState = JSON.parse(e.target.result)
+
+          // Validate the imported data structure
+          if (!gridState.timestamp || !gridState.boardConfig || !gridState.nails) {
+            throw new Error('Invalid grid file format')
+          }
+
+          // Load the imported data
+          Object.assign(boardSettings, {
+            ...gridState.boardConfig.dimensions,
+            ...gridState.boardConfig.appearance
+          })
+
+          // Load nails with coordinate-based structure
+          if (gridState.nails) {
+            nails.value = {}
+
+            Object.entries(gridState.nails).forEach(([positionKey, nail]) => {
+              // Handle both new simplified structure and legacy structure
+              let height, width
+
+              if (nail.properties) {
+                // Legacy structure with properties wrapper
+                height = nail.properties.height
+                width = nail.properties.width
+              } else {
+                // New simplified structure
+                height = nail.height
+                width = nail.width
+              }
+
+              // Handle both numeric width and legacy string width
+              if (typeof width === 'string') {
+                // Convert legacy string width to numeric
+                width = getWidthNumberFromType(width)
+              }
+
+              nails.value[positionKey] = {
+                height: height,
+                width: width // Store as numeric width
+              }
+            })
+          }
+
+          // Load view state if available
+          if (gridState.viewState) {
+            scale.value = gridState.viewState.scale || 1
+            xOffset.value = gridState.viewState.xOffset || 0
+            yOffset.value = gridState.viewState.yOffset || 0
+          }
+
+          nextTick(() => {
+            generateGrid()
+            updateTransform()
+          })
+
+          resolve(gridState)
+        } catch (error) {
+          reject(error)
         }
       }
+      reader.readAsText(file)
     })
   }
 
+  // Watch for board settings changes and regenerate grid
+  watch(
+    () => [
+      boardSettings.dotsCountHorizontal,
+      boardSettings.dotsCountVertical,
+      boardSettings.marginBetweenNails,
+      boardSettings.paddingBoard,
+      boardSettings.boardColor
+    ],
+    () => {
+      initializeGrid()
+      nextTick(() => {
+        generateGrid()
+      })
+    }
+  )
+
+  // Initialize
+  initializeGrid()
+
   return {
+    // State
     scale,
     xOffset,
     yOffset,
     isDragging,
-    selectedColor,
-    currentTool,
-    customColor,
-    isControlsCollapsed,
-    gridState,
-    dots,
+    nails,
+
+    // Computed
     zoomPercentage,
+    gridStyles,
+    boardDimensions,
+
+    // Methods
     generateGrid,
-    applyToolToDot,
-    startSelect,
+    clearAllNails,
     resetView,
     updateTransform,
-    fillAllDots,
-    clearAllDots,
     saveGrid,
     loadGrid,
-    exportImage,
-    updateDotNumbers
+    exportGrid,
+    importGrid,
+    initializeGrid
   }
 }

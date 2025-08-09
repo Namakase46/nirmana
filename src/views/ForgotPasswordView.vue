@@ -38,89 +38,36 @@
         <div class="text-center">
           <div class="w-16 h-16 mx-auto mb-6 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 rounded-xl shadow-lg flex items-center justify-center">
             <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
           </div>
-          <h2 class="text-3xl font-bold mb-2">Welcome Back</h2>
-          <p class="text-gray-600 dark:text-gray-400">Sign in to your Nirmana account</p>
+          <h2 class="text-3xl font-bold mb-2">Forgot Password?</h2>
+          <p class="text-gray-600 dark:text-gray-400">No worries! Enter your email and we'll send you a reset link</p>
         </div>
 
-        <!-- Login Form -->
+        <!-- Forgot Password Form -->
         <div class="bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-xl">
-          <form @submit.prevent="handleLogin" class="space-y-6">
-            <!-- Username Field -->
+          <form @submit.prevent="handleForgotPassword" class="space-y-6">
+            <!-- Email Field -->
             <div>
-              <label for="username" class="block text-sm font-medium mb-2">
-                Email or Username
+              <label for="email" class="block text-sm font-medium mb-2">
+                Email Address
               </label>
               <div class="relative">
                 <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                   </svg>
                 </div>
                 <input
-                  id="username"
-                  v-model="form.login"
-                  type="text"
+                  id="email"
+                  v-model="form.email"
+                  type="email"
                   required
                   class="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="Enter your email or username"
+                  placeholder="Enter your email address"
                 />
               </div>
-            </div>
-
-            <!-- Password Field -->
-            <div>
-              <label for="password" class="block text-sm font-medium mb-2">
-                Password
-              </label>
-              <div class="relative">
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                  </svg>
-                </div>
-                <input
-                  id="password"
-                  v-model="form.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  required
-                  class="block w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white/50 dark:bg-slate-700/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors duration-200"
-                  placeholder="Enter your password"
-                />
-                <button
-                  type="button"
-                  @click="showPassword = !showPassword"
-                  class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                >
-                  <svg v-if="!showPassword" class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
-                  <svg v-else class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L8.05 8.05m1.828 1.828l4.242 4.242m0 0L16.95 15.95M14.12 14.12l1.83 1.83" />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            <!-- Remember Me & Forgot Password -->
-            <div class="flex items-center justify-between">
-              <div class="flex items-center">
-                <input
-                  id="remember-me"
-                  v-model="form.rememberMe"
-                  type="checkbox"
-                  class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label for="remember-me" class="ml-2 block text-sm text-gray-600 dark:text-gray-400">
-                  Remember me
-                </label>
-              </div>
-              <button type="button" class="text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 font-medium">
-                <router-link to="/forgot-password">Forgot password?</router-link>
-              </button>
             </div>
 
             <!-- Submit Button -->
@@ -132,16 +79,16 @@
               <svg v-if="isLoading" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-              {{ isLoading ? 'Signing in...' : 'Sign In' }}
+              {{ isLoading ? 'Sending reset link...' : 'Send Reset Link' }}
             </button>
           </form>
 
-          <!-- Sign Up Link -->
+          <!-- Back to Sign In Link -->
           <div class="mt-6 text-center">
             <p class="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?
-              <router-link to="/register" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 ml-1">
-                Create one now
+              Remember your password?
+              <router-link to="/login" class="font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 ml-1">
+                Back to Sign In
               </router-link>
             </p>
           </div>
@@ -159,8 +106,8 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div>
-        <p class="font-medium">Signed In Successfully!</p>
-        <p class="text-sm opacity-90">Welcome back to Nirmana</p>
+        <p class="font-medium">Reset Link Sent!</p>
+        <p class="text-sm opacity-90">Check your email for password reset instructions</p>
       </div>
       <button @click="showSuccessNotification = false" class="ml-4 text-white hover:text-gray-200">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -179,7 +126,7 @@
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
       </svg>
       <div>
-        <p class="font-medium">Sign In Failed</p>
+        <p class="font-medium">Request Failed</p>
         <p class="text-sm opacity-90">{{ errorMessage }}</p>
       </div>
       <button @click="showErrorNotification = false" class="ml-4 text-white hover:text-gray-200">
@@ -218,13 +165,10 @@ const toggleDarkMode = useToggle(isDark)
 
 // Form data
 const form = ref({
-  login: '',
-  password: '',
-  rememberMe: false
+  email: ''
 })
 
 // Form state
-const showPassword = ref(false)
 const isLoading = ref(false)
 
 // Notification state
@@ -232,25 +176,23 @@ const showSuccessNotification = ref(false)
 const showErrorNotification = ref(false)
 const errorMessage = ref('')
 
-// Cookie utility functions
-const setCookie = (name, value, expirationDate) => {
-  const expires = expirationDate ? `expires=${new Date(expirationDate).toUTCString()};` : ''
-  document.cookie = `${name}=${value}; ${expires} path=/; Secure; SameSite=Strict`
-}
-
-// Handle login
-const handleLogin = async () => {
+// Handle forgot password
+const handleForgotPassword = async () => {
   isLoading.value = true
   
   try {
+    const backendUrl = import.meta.env.VITE_BACKEND_BASE_URL
+    if (!backendUrl) {
+      throw new Error('Backend URL not configured')
+    }
+    
     // Prepare the data for the API request
     const requestData = {
-      login: form.value.login,
-      password: form.value.password
+      email: form.value.email
     }
     
     // Make the API request
-    const response = await fetch(`${import.meta.env.VITE_BACKEND_BASE_URL}/api/v1/auth/sign_in`, {
+    const response = await fetch(`${backendUrl}/api/v1/auth/forgot_password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -259,33 +201,20 @@ const handleLogin = async () => {
     })
     
     if (response.ok) {
-      const data = await response.json()
-      
-      // Store session token with expiration
-      setCookie('sess_token', data.session.token, data.session.expires_at)
-      
-      // Store user data
-      const userData = {
-        uid: data.user.uid,
-        email: data.user.email,
-        username: data.user.username,
-        first_name: data.user.first_name,
-        last_name: data.user.last_name
-      }
-      setCookie('user_data', JSON.stringify(userData), data.session.expires_at)
-      
       // Show success notification
       showSuccessNotification.value = true
       
-      // Hide notification after 2 seconds and redirect
+      // Clear the form
+      form.value.email = ''
+      
+      // Hide notification after 5 seconds
       setTimeout(() => {
         showSuccessNotification.value = false
-        router.push('/')
-      }, 2000)
+      }, 5000)
     } else {
       // Handle error response
-      const errorData = await response.json()
-      let errorMsg = 'Sign in failed. Please check your username / password.'
+      const errorData = await response.json().catch(() => ({ message: 'Failed to send reset link' }))
+      let errorMsg = 'Failed to send reset link. Please try again.'
       
       // Try to extract meaningful error message from response
       if (errorData.errors) {
@@ -317,10 +246,10 @@ const handleLogin = async () => {
       }, 5000)
     }
   } catch (error) {
-    console.error('Login error:', error)
+    console.error('Forgot password error:', error)
     
     // Handle network or other errors
-    errorMessage.value = 'Network error. Please check your connection and try again.'
+    errorMessage.value = error.message || 'Network error. Please check your connection and try again.'
     showErrorNotification.value = true
     
     // Hide error notification after 5 seconds
