@@ -180,11 +180,43 @@ export function use3DScene(canvasContainer) {
       // Add OrbitControls - mark as raw to prevent Vue reactivity
       controls.value = markRaw(new OrbitControls(camera.value, renderer.value.domElement))
       controls.value.enableDamping = true
+      controls.value.dampingFactor = 0.05
       controls.value.autoRotate = settings.value.autoRotate
+      controls.value.autoRotateSpeed = 0.5
+      controls.value.enableZoom = true
+      controls.value.enablePan = true
+      controls.value.enableRotate = true
+      controls.value.maxPolarAngle = Math.PI // Allow full rotation
+      controls.value.minDistance = 10
+      controls.value.maxDistance = 200
+
+      // Add event listeners for debugging
+      controls.value.addEventListener('start', () => {
+        console.log('3D Controls: Interaction started')
+      })
+      controls.value.addEventListener('change', () => {
+        console.log('3D Controls: Camera position changed')
+      })
+      controls.value.addEventListener('end', () => {
+        console.log('3D Controls: Interaction ended')
+      })
+
+      console.log('3D Controls initialized:', {
+        enableRotate: controls.value.enableRotate,
+        enableZoom: controls.value.enableZoom,
+        enablePan: controls.value.enablePan,
+        domElement: controls.value.domElement
+      })
 
       setupLighting()
       createBoard()
       createNails()
+
+      // Start the animation loop
+      animate()
+
+      // Add resize listener
+      window.addEventListener('resize', onWindowResize)
 
       isLoading.value = false
       isSceneReady.value = true
@@ -283,18 +315,23 @@ export function use3DScene(canvasContainer) {
       scene.value.remove(nailInstancedMesh)
       nailInstancedMesh.geometry.dispose()
       nailInstancedMesh.material.dispose()
+      nailInstancedMesh = null
     }
     if (nailHeadInstancedMesh) {
       scene.value.remove(nailHeadInstancedMesh)
       nailHeadInstancedMesh.geometry.dispose()
       nailHeadInstancedMesh.material.dispose()
+      nailHeadInstancedMesh = null
     }
 
-    // Check if we have custom nail data
-    if (settings.value.customNailData && settings.value.customNailData.nails) {
+    // Check if we have custom nail data and it has nails
+    if (settings.value.customNailData &&
+      settings.value.customNailData.nails &&
+      Object.keys(settings.value.customNailData.nails).length > 0) {
       createCustomNails()
     } else {
-      createPatternNails()
+      // Don't create any pattern nails - only show nails from 2D editor
+      // createPatternNails() - commented out to prevent default patterns
     }
   }
 
@@ -310,6 +347,7 @@ export function use3DScene(canvasContainer) {
     const nailPositions = Object.keys(nailsData)
     const instanceCount = nailPositions.length
 
+    // If no nails, just return without creating any geometry
     if (instanceCount === 0) return
 
     // Create nail geometries - mark as raw to prevent reactivity issues
@@ -533,19 +571,6 @@ export function use3DScene(canvasContainer) {
   }
 
   // Lifecycle
-  onMounted(() => {
-    try {
-      initScene()
-      animate()
-    } catch (error) {
-      console.error('Failed to initialize scene:', error)
-      isLoading.value = false
-      sceneReadyResolve()
-    }
-
-    window.addEventListener('resize', onWindowResize)
-  })
-
   onUnmounted(() => {
     window.removeEventListener('resize', onWindowResize)
     if (renderer.value) {

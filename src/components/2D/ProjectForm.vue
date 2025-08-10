@@ -71,7 +71,7 @@
     </div>
     
     <!-- Zoom Info & Reset View -->
-    <div class="fixed top-5 right-5 z-10 flex flex-col items-end gap-2">
+    <div class="fixed top-15 left-5 z-10 flex flex-col items-start gap-2">
       <div class="bg-white/80 dark:bg-slate-800/80 px-3 py-2 rounded-lg shadow-lg backdrop-blur text-sm">
         Zoom: {{ zoomPercentage }}%
       </div>
@@ -110,14 +110,46 @@
     </div>
 
     <!-- Floating Control Panel -->
-    <div class="fixed bottom-5 left-5 z-30 bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-80 max-h-[70vh] flex flex-col control-panel floating-panel">
-      <!-- Panel Header -->
-      <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-        <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Control Panel</h3>
-      </div>
+    <VueDraggableResizable
+      :x="panelPosition.x"
+      :y="panelPosition.y"
+      :w="panelSize.width"
+      :h="panelSize.height"
+      :min-width="280"
+      :min-height="200"
+      :max-width="600"
+      :max-height="800"
+      :resizable="true"
+      :draggable="true"
+      class-name="z-30"
+      class-name-draggable="cursor-move"
+      class-name-resizable="resize-handle"
+      @resize="onPanelResize"
+      @drag="onPanelDrag"
+    >
+      <div class="h-full bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col control-panel floating-panel">
+        <!-- Panel Header -->
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
+          <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Control Panel</h3>
+          <div class="flex items-center gap-2">
+            <!-- Minimize/Maximize Button -->
+            <button
+              @click="toggleMinimize"
+              class="p-1 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+              :title="isMinimized ? 'Maximize' : 'Minimize'"
+            >
+              <svg v-if="!isMinimized" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" />
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          </div>
+        </div>
 
       <!-- Tab Navigation -->
-      <div class="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+      <div v-if="!isMinimized" class="flex border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
         <button
           v-for="tab in tabs"
           :key="tab.id"
@@ -134,7 +166,7 @@
       </div>
 
       <!-- Tab Content (Scrollable) -->
-      <div class="p-4 overflow-y-auto flex-1">
+      <div v-if="!isMinimized" class="p-4 overflow-y-auto flex-1">
         <!-- Board Tab -->
         <div v-if="activeTab === 'board'" class="space-y-4">
           <div>
@@ -391,13 +423,16 @@
             </div>
           </div>
         </div>
+        </div>
       </div>
-    </div>
+    </VueDraggableResizable>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted, onUnmounted, computed, watch, nextTick } from 'vue'
+import VueDraggableResizable from 'vue-draggable-resizable'
+import 'vue-draggable-resizable/style.css'
 import { use2DGrid } from '@/composables/use2DGrid'
 import Toast from '@/components/Toast.vue'
 import { useToast } from '@/composables/useToast'
@@ -445,6 +480,39 @@ const { success, error, warning } = useToast()
 const isDark = ref(false)
 const showMobileAlert = ref(false)
 
+// Panel state for draggable/resizable functionality
+const isMinimized = ref(false)
+const panelPosition = reactive({
+  x: 20,
+  y: 100 // Position from top instead of bottom for better initial placement
+})
+const panelSize = reactive({
+  width: 320,
+  height: 500
+})
+
+// Panel event handlers
+const onPanelResize = (x, y, width, height) => {
+  panelSize.width = width
+  panelSize.height = height
+}
+
+const onPanelDrag = (x, y) => {
+  panelPosition.x = x
+  panelPosition.y = y
+}
+
+const toggleMinimize = () => {
+  isMinimized.value = !isMinimized.value
+  if (isMinimized.value) {
+    // Store current size and minimize
+    panelSize.height = 60 // Just show the header
+  } else {
+    // Restore to a reasonable size
+    panelSize.height = 500
+  }
+}
+
 // Check for mobile device
 const checkMobile = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera
@@ -457,6 +525,14 @@ const testo = () => {
 
 // Add zoom functionality
 const handleWheel = (event) => {
+  // Check if we're in 3D preview area (ignore events from 3D scene)
+  const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
+  
+  // If the event is in the 3D area, don't handle it
+  if (is3DPreviewArea) {
+    return
+  }
+  
   // Allow zooming anywhere on the screen when Ctrl/Cmd is held
   if (event.ctrlKey || event.metaKey) {
     event.preventDefault()
@@ -487,6 +563,14 @@ const handleMouseDown = (event) => {
   // Check if we're clicking on a nail dot
   const isNailDot = event.target.closest('.nail-slot')
   
+  // Check if we're in 3D preview area (ignore events from 3D scene)
+  const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
+  
+  // If the event is in the 3D area, don't handle it
+  if (is3DPreviewArea) {
+    return
+  }
+  
   // Pan with: 1) Middle mouse button anywhere, 2) Left click on background (not UI or nail dots), 3) Alt/Ctrl + left click anywhere
   if (!isUIElement && (
     event.button === 1 || // Middle mouse button
@@ -507,6 +591,9 @@ const handleMouseDown = (event) => {
 }
 
 const handleMouseMove = (event) => {
+  // Check if we're in 3D preview area (ignore events from 3D scene)
+  const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
+  
   if (isPanning) {
     event.preventDefault()
     const deltaX = event.clientX - lastPanX
@@ -519,7 +606,8 @@ const handleMouseMove = (event) => {
     lastPanY = event.clientY
     
     updateTransform()
-  } else {
+  } else if (!is3DPreviewArea) {
+    // Only handle cursor changes if not in 3D area
     // Show appropriate cursor based on what's under the mouse
     const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
     const isNailDot = event.target.closest('.nail-slot')
@@ -748,3 +836,60 @@ defineExpose({
   initializeGrid
 })
 </script>
+
+<style scoped>
+/* Custom styles for vue-draggable-resizable */
+:deep(.vdr) {
+  border: none !important;
+}
+
+:deep(.vdr-handle) {
+  background: rgba(99, 102, 241, 0.3) !important;
+  border: 1px solid rgba(99, 102, 241, 0.5) !important;
+}
+
+:deep(.vdr-handle-tl),
+:deep(.vdr-handle-tr),
+:deep(.vdr-handle-bl),
+:deep(.vdr-handle-br) {
+  width: 8px !important;
+  height: 8px !important;
+  border-radius: 50% !important;
+}
+
+:deep(.vdr-handle-ml),
+:deep(.vdr-handle-mr) {
+  width: 4px !important;
+  border-radius: 2px !important;
+}
+
+:deep(.vdr-handle-tm),
+:deep(.vdr-handle-bm) {
+  height: 4px !important;
+  border-radius: 2px !important;
+}
+
+/* Custom scrollbar for the panel content */
+.control-panel ::-webkit-scrollbar {
+  width: 6px;
+}
+
+.control-panel ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 3px;
+}
+
+.control-panel ::-webkit-scrollbar-thumb {
+  background: rgba(99, 102, 241, 0.5);
+  border-radius: 3px;
+}
+
+.control-panel ::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.7);
+}
+
+/* Minimize transition */
+.control-panel {
+  transition: all 0.3s ease;
+}
+</style>
