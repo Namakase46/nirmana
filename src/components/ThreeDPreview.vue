@@ -10,44 +10,6 @@
 
     <!-- Canvas container -->
     <div ref="canvasContainer" class="w-full h-full" style="touch-action: none;"></div>
-
-    <!-- Controls overlay -->
-    <div class="absolute top-4 right-4 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 space-y-2 z-20">
-      <button
-        @click="resetCamera"
-        class="flex items-center justify-center w-10 h-10 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors"
-        title="Reset Camera"
-      >
-        <svg class="w-5 h-5 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
-      
-      <button
-        @click="toggleAutoRotate"
-        class="flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-        :class="autoRotate ? 'bg-indigo-500 text-white' : 'bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-600 dark:text-gray-300'"
-        title="Toggle Auto Rotation"
-      >
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-      </button>
-    </div>
-
-    <!-- Stats overlay -->
-    <div class="absolute bottom-4 left-4 bg-white dark:bg-gray-700 rounded-lg shadow-lg p-3 text-sm z-20">
-      <div class="space-y-1">
-        <div class="flex justify-between items-center gap-4">
-          <span class="text-gray-600 dark:text-gray-400">Nails:</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{ nailCount }}</span>
-        </div>
-        <div class="flex justify-between items-center gap-4">
-          <span class="text-gray-600 dark:text-gray-400">Grid:</span>
-          <span class="font-medium text-gray-900 dark:text-gray-100">{{ gridDimensions }}</span>
-        </div>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -64,6 +26,18 @@ const props = defineProps({
   boardConfig: {
     type: Object,
     default: () => ({})
+  },
+  autoRotate: {
+    type: Boolean,
+    default: false
+  },
+  resetCameraTrigger: {
+    type: Number,
+    default: 0
+  },
+  resizeTrigger: {
+    type: Number,
+    default: 0
   }
 })
 
@@ -73,7 +47,6 @@ const canvasContainer = ref(null)
 // State
 const isLoading = ref(true)
 const loadingMessage = ref('Initializing 3D scene...')
-const autoRotate = ref(false)
 
 // Computed
 const nailCount = computed(() => Object.keys(props.nailsData).length)
@@ -175,27 +148,6 @@ const update3DScene = async () => {
   }
 }
 
-// Control functions
-const resetCamera = () => {
-  console.log('Reset camera clicked')
-  if (controls.value) {
-    controls.value.reset()
-  } else {
-    console.log('Controls not available')
-  }
-}
-
-const toggleAutoRotate = () => {
-  console.log('Toggle auto rotate clicked, current:', autoRotate.value)
-  autoRotate.value = !autoRotate.value
-  if (controls.value) {
-    controls.value.autoRotate = autoRotate.value
-    console.log('Auto rotate set to:', autoRotate.value)
-  } else {
-    console.log('Controls not available for auto rotate')
-  }
-}
-
 // Watch for changes in props - with improved debouncing
 let updateTimeout
 watch(() => props.nailsData, () => {
@@ -215,6 +167,27 @@ watch(() => props.boardConfig, () => {
     })
   }, 150)
 }, { deep: true })
+
+// Watch for auto rotate changes
+watch(() => props.autoRotate, (newValue) => {
+  if (controls.value) {
+    controls.value.autoRotate = newValue
+  }
+})
+
+// Watch for reset camera trigger
+watch(() => props.resetCameraTrigger, () => {
+  if (controls.value) {
+    controls.value.reset()
+  }
+})
+
+// Watch for resize trigger
+watch(() => props.resizeTrigger, () => {
+  nextTick(() => {
+    onWindowResize()
+  })
+})
 
 // Lifecycle
 onMounted(() => {

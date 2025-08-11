@@ -24,13 +24,6 @@
       </div>
     </div>
     
-    <!-- App Title -->
-    <div class="fixed top-4 left-1/2 transform -translate-x-1/2 z-20">
-      <h1 class="text-xl font-semibold bg-white/80 dark:bg-slate-800/80 px-5 py-2 rounded-full shadow-lg backdrop-blur">
-        {{ title }}
-      </h1>
-    </div>
-    
     <!-- Navigation Buttons -->
     <div class="fixed top-5 left-5 z-20 flex gap-2">
       <!-- Home Button -->
@@ -45,7 +38,7 @@
       </router-link>
       
       <!-- 3D Mode Toggle -->
-      <router-link 
+      <!-- <router-link 
         to="/3d"
         class="p-2 bg-white/80 dark:bg-slate-800/80 rounded-full shadow-lg backdrop-blur hover:bg-white/90 dark:hover:bg-slate-800/90 transition-colors"
         title="Switch to 3D Mode"
@@ -53,7 +46,7 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
         </svg>
-      </router-link>
+      </router-link> -->
       
       <!-- Dark Mode Toggle -->
       <button 
@@ -121,7 +114,9 @@
       :max-height="800"
       :resizable="true"
       :draggable="true"
-      class-name="z-30"
+      :parent="false"
+      :drag-handle="'.panel-drag-handle'"
+      class-name="z-50 draggable-panel"
       class-name-draggable="cursor-move"
       class-name-resizable="resize-handle"
       @resize="onPanelResize"
@@ -129,7 +124,7 @@
     >
       <div class="h-full bg-white/90 dark:bg-slate-800/90 backdrop-blur rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col control-panel floating-panel">
         <!-- Panel Header -->
-        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between">
+        <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0 flex items-center justify-between panel-drag-handle">
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Control Panel</h3>
           <div class="flex items-center gap-2">
             <!-- Minimize/Maximize Button -->
@@ -423,6 +418,48 @@
             </div>
           </div>
         </div>
+
+        <!-- 3D Preview Tab -->
+        <div v-if="activeTab === '3d-preview'" class="space-y-4">
+          <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-md">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">3D Scene Controls</h4>
+            <div class="space-y-3">
+              <!-- Reset Camera Button -->
+              <button
+                @click="resetCamera"
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 rounded-lg transition-colors text-gray-700 dark:text-gray-300"
+                title="Reset Camera"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Reset Camera</span>
+              </button>
+              
+              <!-- Auto Rotate Button -->
+              <button
+                @click="toggleAutoRotate"
+                class="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg transition-colors"
+                :class="autoRotate ? 'bg-indigo-500 hover:bg-indigo-600 text-white' : 'bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 text-gray-700 dark:text-gray-300'"
+                title="Toggle Auto Rotation"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>{{ autoRotate ? 'Stop Auto Rotate' : 'Auto Rotate' }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3D Scene Info -->
+          <div class="bg-gray-50 dark:bg-slate-800 p-3 rounded-md">
+            <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">3D Scene Info</h4>
+            <div class="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+              <p>Use mouse/trackpad to rotate, zoom, and pan the 3D view</p>
+              <p>The 3D preview updates automatically when you modify the 2D grid</p>
+            </div>
+          </div>
+        </div>
         </div>
       </div>
     </VueDraggableResizable>
@@ -471,7 +508,7 @@ const props = defineProps({
 })
 
 // Emits
-const emit = defineEmits(['save-project'])
+const emit = defineEmits(['save-project', 'reset-3d-camera', 'toggle-3d-auto-rotate'])
 
 // Toast composable
 const { success, error, warning } = useToast()
@@ -528,8 +565,11 @@ const handleWheel = (event) => {
   // Check if we're in 3D preview area (ignore events from 3D scene)
   const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
   
-  // If the event is in the 3D area, don't handle it
-  if (is3DPreviewArea) {
+  // Check if we're over UI elements (control panel, etc.)
+  const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+  
+  // If the event is in the 3D area AND not on the control panel, don't handle it
+  if (is3DPreviewArea && !isUIElement) {
     return
   }
   
@@ -566,8 +606,8 @@ const handleMouseDown = (event) => {
   // Check if we're in 3D preview area (ignore events from 3D scene)
   const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
   
-  // If the event is in the 3D area, don't handle it
-  if (is3DPreviewArea) {
+  // If the event is in the 3D area AND not on the control panel, don't handle it
+  if (is3DPreviewArea && !isUIElement) {
     return
   }
   
@@ -594,6 +634,9 @@ const handleMouseMove = (event) => {
   // Check if we're in 3D preview area (ignore events from 3D scene)
   const is3DPreviewArea = event.target.closest('canvas') || event.target.closest('[class*="threejs"]') || event.target.closest('.threed-preview')
   
+  // Check if we're over UI elements (control panel, etc.)
+  const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
+  
   if (isPanning) {
     event.preventDefault()
     const deltaX = event.clientX - lastPanX
@@ -606,10 +649,9 @@ const handleMouseMove = (event) => {
     lastPanY = event.clientY
     
     updateTransform()
-  } else if (!is3DPreviewArea) {
-    // Only handle cursor changes if not in 3D area
+  } else if (!is3DPreviewArea || isUIElement) {
+    // Handle cursor changes if not in 3D area OR if over UI elements (like control panel)
     // Show appropriate cursor based on what's under the mouse
-    const isUIElement = event.target.closest('.fixed, button, input, select, textarea, [role="button"], .control-panel, .floating-panel')
     const isNailDot = event.target.closest('.nail-slot')
     
     if (isUIElement) {
@@ -719,11 +761,27 @@ const activeTab = ref('board')
 const tabs = [
   { id: 'board', label: 'Board' },
   { id: 'nails', label: 'Nails' },
-  { id: 'project', label: 'Project' }
+  { id: 'project', label: 'Project' },
+  { id: '3d-preview', label: '3D Preview' }
 ]
 
 // Project settings
 const projectName = ref('')
+
+// 3D Preview controls
+const autoRotate = ref(false)
+
+// 3D Preview control functions
+const resetCamera = () => {
+  // Emit event to parent component to handle 3D camera reset
+  emit('reset-3d-camera')
+}
+
+const toggleAutoRotate = () => {
+  autoRotate.value = !autoRotate.value
+  // Emit event to parent component to handle 3D auto rotate
+  emit('toggle-3d-auto-rotate', autoRotate.value)
+}
 
 // Board color selection
 const selectBoardColor = (colorOption) => {
@@ -891,5 +949,29 @@ defineExpose({
 /* Minimize transition */
 .control-panel {
   transition: all 0.3s ease;
+}
+
+/* Draggable panel styles */
+:deep(.draggable-panel) {
+  z-index: 9999 !important;
+  position: fixed !important;
+}
+
+:deep(.draggable-panel.draggable) {
+  z-index: 10000 !important;
+}
+
+/* Drag handle styles */
+.panel-drag-handle {
+  cursor: move;
+  user-select: none;
+}
+
+.panel-drag-handle:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.dark .panel-drag-handle:hover {
+  background-color: rgba(255, 255, 255, 0.05);
 }
 </style>
